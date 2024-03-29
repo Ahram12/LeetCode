@@ -1,1 +1,1 @@
-Various Leetcode problems organized by type and interests
+Favorite Leetcode problems organized by type and interests
