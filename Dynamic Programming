@@ -1,1 +1,230 @@
+//Leetcode 446
+use std::collections::HashMap;
 
+impl Solution {
+    pub fn number_of_arithmetic_slices(nums: Vec<i32>) -> i32 {
+        let size = nums.len();
+        let mut dp: Vec<HashMap<i64, i32>> = vec![HashMap::new(); size];
+        let mut count: i32 = 0;
+    
+        for j in 1..size {
+            for i in 0..j  {
+                let diff: i64 = nums[j] as i64 - nums[i] as i64;
+                let val = *dp[i].get(&diff).unwrap_or(&0);
+                *dp[j].entry(diff).or_insert(0) += val + 1;
+                count += val;
+            }
+        }
+    
+        return count 
+    }
+}
+
+//Leetcode 689
+impl Solution {
+    pub fn max_sum_of_three_subarrays(nums: Vec<i32>, k: i32) -> Vec<i32> {
+        let size = nums.len();
+        let mut prefix: Vec<i64> = vec![0; size + 1];
+    
+        for i in 0..size {
+            prefix[i + 1] = prefix[i] + nums[i] as i64;
+        }
+    
+        let mut max1: Vec<usize> = vec![0; size];
+        max1[k as usize - 1] = k as usize - 1;
+        let mut max2: Vec<usize> = vec![0; size];
+        max2[2*k as usize - 1] = 2*k as usize - 1;
+        let mut val1: i64 = prefix[2*k as usize];
+        let mut val2: i64 = prefix[3*k as usize];
+        let mut ret: Vec<i32> = vec![0, k, 2*k];
+    
+        for i in k as usize..size {
+            if prefix[i + 1] - prefix[i + 1 - k as usize] > prefix[max1[i - 1] + 1] - prefix[max1[i - 1] + 1 - k as usize] {
+                max1[i] = i;
+            } else {
+                max1[i] = max1[i - 1];
+            }
+        
+            if i > 2*k as usize - 1 {
+                if prefix[i + 1] - prefix[i + 1 - k as usize] + prefix[max1[i - k as usize] + 1] - prefix[max1[i - k as usize] + 1 - k as usize] > val1 {
+                    val1 = prefix[i + 1] - prefix[i + 1 - k as usize] + prefix[max1[i - k as usize] + 1] - prefix[max1[i - k as usize] + 1 - k as usize];
+                    max2[i] = i;
+                } else {
+                    max2[i] = max2[i - 1];
+                }
+            }
+        
+            if i > 3*k as usize - 1 {
+                if prefix[i + 1] - prefix[i + 1 - k as usize] + prefix[max2[i - k as usize] + 1] - prefix[max2[i - k as usize] + 1 - k as usize] + prefix[max1[max2[i - k as usize] - k as usize] + 1] - prefix[max1[max2[i - k as usize] - k as usize] + 1 - k as usize] > val2 {
+                    val2 = prefix[i + 1] - prefix[i + 1 - k as usize] + prefix[max2[i - k as usize] + 1] - prefix[max2[i - k as usize] + 1 - k as usize] + prefix[max1[max2[i - k as usize] - k as usize] + 1] - prefix[max1[max2[i - k as usize] - k as usize] + 1 - k as usize];
+                    ret[0] = (max1[max2[i - k as usize] - k as usize] + 1 - k as usize) as i32;
+                    ret[1] = (max2[i - k as usize] + 1 - k as usize) as i32;
+                    ret[2] = (i + 1 - k as usize) as i32;
+            }
+        }
+    }
+    
+    return ret
+    }
+}
+
+//Leetcode 790
+impl Solution {
+    pub fn num_tilings(n: i32) -> i32 {
+        if n == 1 || n == 2{
+            return n
+        } else {
+            const MOD: i32 = 10_i32.pow(9) + 7;
+            let mut dp: Vec<i32> = vec![1;n as usize + 1];
+            dp[2] = 2;
+            for i in 3..n as usize + 1 {
+                let a = 2*dp[i - 1] % MOD;
+                let b = dp[i - 3] % MOD;
+                dp[i] = (a + b) % MOD;
+            }
+
+            return dp[n as usize] % MOD
+        }
+    }
+}
+
+//Leetcode 1186
+use std::cmp;
+
+impl Solution {
+    pub fn maximum_sum(arr: Vec<i32>) -> i32 {
+        let size = arr.len();
+        let mut forward: Vec<i64> = vec![0; size + 1];
+        let mut backward: Vec<i64> = vec![0; size + 1];
+        let mut pre_min: Vec<i64> = vec![0; size + 1];
+        let mut suff_min: Vec<i64> = vec![0; size + 1];
+        let mut pre_index: usize = 0;
+        let mut suff_index: usize = size;
+        let mut min: i64 = 0;
+    
+        let mut neg_list: Vec<usize> = Vec::new();
+        let mut ans: i64 = i64::MIN;
+    
+        for i in 0..size {
+            forward[i + 1] = forward[i] + arr[i] as i64;
+            backward[size - 1 - i] =  backward[size - i] + arr[size - 1 - i] as i64;
+        
+            ans = cmp::max(ans, forward[i + 1] - min);
+            min = cmp::min(min, forward[i + 1]);
+            if forward[i + 1] > forward[pre_index] {
+                pre_index = i + 1;
+            } 
+            if backward[size - 1 - i] > backward[suff_index] {
+                suff_index = size - 1 - i;
+            }
+            pre_min[i + 1] = cmp::min(pre_min[i], forward[i + 1]);
+            suff_min[size - 1 - i] = cmp::min(suff_min[size - i], backward[size - 1 - i]);
+        
+            if arr[i] < 0 {
+                neg_list.push(i)
+            }
+        }
+    
+        for index in neg_list {
+            if index == 0  {
+                if pre_index != 0 {
+                    ans = cmp::max(ans, forward[pre_index] - arr[index] as i64);
+                }
+            } else if index == size - 1 {
+                if suff_index != size {
+                    ans = cmp::max(ans, backward[index + 1] - arr[index] as i64);
+                }
+            } else {
+                ans = cmp::max(ans, forward[index] - pre_min[index - 1] + (backward[index + 1] - suff_min[index + 1]));
+            }
+        }
+    
+        return ans as i32
+    }
+}
+
+//Leetcode 2830
+use std::cmp;
+use std::collections::HashMap;
+
+impl Solution {
+    pub fn maximize_the_profit(n: i32, mut offers: Vec<Vec<i32>>) -> i32 {
+        let mut map: HashMap<i32, Vec<i32>> = HashMap::new();
+        let mut gold: HashMap<(i32, i32), i32> = HashMap::new();
+
+        offers.sort_unstable_by_key(|v| v[2]);
+
+        for idx in 0..offers.len() {
+            map.entry(offers[idx][1]).and_modify(|v| v.push(offers[idx][0])).or_insert(vec![offers[idx][0]]);
+            gold.insert((offers[idx][0], offers[idx][1]), offers[idx][2]);
+        }
+    
+        let mut dp: Vec<i32> = vec![0; n as usize];
+    
+        for idx in 0..n {
+            if map.contains_key(&idx) {
+                let vec: Vec<i32> = map.get(&idx).unwrap().clone();
+                for i in 0..vec.len() {
+                    if vec[i] == 0 {
+                        if idx == 0 {
+                            dp[idx as usize] = cmp::max(dp[idx as usize], *gold.get(&(vec[i], idx)).unwrap());
+                        } else {
+                            dp[idx as usize] = cmp::max(dp[idx as usize - 1], cmp::max(dp[idx as usize], *gold.get(&(vec[i], idx)).unwrap()));
+                        }
+                    } else {
+                        dp[idx as usize] = cmp::max(dp[idx as usize - 1], cmp::max(dp[idx as usize], dp[vec[i] as usize - 1] + *gold.get(&(vec[i], idx)).unwrap()));
+                    }
+                }
+            } else {
+                if idx > 0 {
+                    dp[idx as usize] = dp[idx as usize - 1];
+                }
+            }
+        }
+    
+        return dp[n as usize - 1]
+    }
+}
+
+//Leetcode 3082
+impl Solution {
+    pub fn sum_of_power(mut nums: Vec<i32>, k: i32) -> i32 {
+        const MOD: i64 = 10_i64.pow(9) + 7;
+        let size = nums.len();
+        let mut power: Vec<i64> = vec![1; size];
+        let mut dp: Vec<Vec<i64>> = vec![vec![0; k as usize + 1]; size];
+    
+        for i in 1..size {
+            power[i] = power[i - 1] * 2;
+            power[i] %= MOD;
+        }
+     
+        nums.sort_unstable();
+    
+        for i in 0..size {
+            for j in 1..k as usize + 1 {
+                if i == 0 {
+                    if nums[i] == j as i32 {
+                        dp[i][j] = 1;
+                    }
+                } else {
+                    dp[i][j] = 2*dp[i - 1][j];
+                    dp[i][j] %= MOD;
+                    if nums[i] < j as i32 {
+                        dp[i][j] += dp[i - 1][j - nums[i] as usize];
+                    } else if nums[i] == j as i32 {
+                        dp[i][j] += power[i];
+                    }
+                    dp[i][j] %= MOD;
+                }
+            }
+        }
+    
+        let mut res = dp[size - 1][k as usize];
+        while res < 0 {
+            res += MOD;
+        }
+    
+        return (res % MOD) as i32
+    }
+}
