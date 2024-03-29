@@ -1,3 +1,327 @@
+
+//Leetcode 920 
+fn binom(n: &i32) -> Vec<Vec<i64>> {
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    let mut dp: Vec<Vec<i64>> = vec![vec![1; 1 + *n as usize]; 1 + *n as usize];
+    for j in 2..*n as usize + 1 {
+        for i in 1..j {
+            dp[j][i] = (dp[j - 1][i - 1] + dp[j - 1][i]) % MOD;
+        }
+    }
+    
+    return dp
+    
+}
+
+fn factorial(n: &i32) -> i64 {
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    let mut count: i32 = 0;
+    let mut val: i64 = 1;
+    
+    while count < *n {
+        val *= count as i64 + 1;
+        val %= MOD;
+        count += 1;
+    }
+    
+    if val > 0 {
+        return val % MOD
+    } else {
+        while val < 0 {
+            val += MOD;
+        }
+       return val % MOD 
+    }
+}
+
+fn modular_exponent(n: &i64, x: &i64) -> i64{
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    if *x == 1 {
+        return n % MOD
+    } else if x % 2 == 0{
+        let new_base = (*n * *n) % MOD;
+        let new_exp = *x/2;
+        return modular_exponent(&new_base, &new_exp) % MOD
+    } else {
+        let new_base = (*n * *n) % MOD;
+        let new_exp = (*x - 1)/2;
+        return (*n *  modular_exponent(&new_base, &new_exp) % MOD) % MOD
+    }
+    
+}
+
+fn mod_inverse (n: &i64) -> i64{
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    if *n % MOD == 0 {
+        return 0
+    } else {
+        return modular_exponent(&n, &(MOD - 2));
+    }
+}
+
+impl Solution {
+    pub fn num_music_playlists(n: i32, goal: i32, k: i32) -> i32 {
+        const MOD: i64 = 10_i64.pow(9) + 7;
+        let mut f: Vec<i64> = vec![0; 1 + goal as usize];
+        let mut e: Vec<i64> = vec![0; 1 + goal as usize];
+    
+        f[k as usize + 1] = factorial(&(k+1));
+        for i in k as usize + 2..n as usize + 1 {
+            let mut prod: i64 = ((i as i64) * modular_exponent(&(i as i64 - k as i64), &(goal as i64 - k as i64 -1))) % MOD; 
+            prod *= f[i - 1];
+            prod %= MOD;
+            let val = mod_inverse(&(i as i64 - k as i64 - 1));
+            prod *= modular_exponent(&val, &(goal as i64 - k as i64)) % MOD;
+            prod %= MOD;
+            f[i] = prod;
+        }
+    
+        let dp: Vec<Vec<i64>> = binom(&goal);
+        for j in 1..n as usize + 1 {
+            let mut res: i64 = 0;
+            for i in 1..j {
+                res += (dp[j][i] * e[i]) % MOD;
+            }
+            e[j] = (f[j] - res) % MOD;
+        }
+    
+        let mut val = e[n as usize];
+        if val > 0 {
+            return (val % MOD) as i32
+        } else {
+            while val < 0 {
+                val += MOD;
+            }
+            return (val % MOD) as i32 
+        }
+    
+    }
+}
+
+
+
+
+//Leetcode 1621
+fn mod_inverse(a: &i64, b: &i64) -> i64 {
+    let mut base: i64 = *a;
+    let mut exp: i64 =*b;
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    
+    if exp == 0 {
+        return 1
+    } else {
+        if exp % 2 == 0 {
+            base = base * base;
+            base %= MOD;
+            exp /= 2;
+            return  mod_inverse(&base, &exp) % MOD
+        } else {
+            let temp = base;
+            base = base * base;
+            base %= MOD;
+            exp -= 1;
+            exp /= 2;
+            return temp * mod_inverse(&base, &exp) % MOD
+        }
+    }
+   
+}
+
+impl Solution {
+    pub fn number_of_sets(n: i32, k: i32) -> i32 {
+        const MOD: i64 = 10_i64.pow(9) + 7;
+        let size: usize = (n + k) as usize;
+        let mut factorial: Vec<i64> = vec![1; size];
+    
+        for i in 1..size {
+            factorial[i] = factorial[i - 1] * (i as i64);
+            factorial[i] %= MOD;
+        }
+    
+        let mut denom: i64 = factorial[(2*k) as usize] * factorial[(n - k - 1) as usize];
+        denom %= MOD;
+        let update: i64 = mod_inverse(&denom, &(MOD - 2));
+        let mut res: i64 = factorial[(n + k - 1) as usize] * update;
+        res %= MOD;
+    
+        while res < 0 {
+            res += MOD;
+        }   
+    
+        return (res % MOD) as i32
+    }
+}
+
+//Leetcode 2338
+use std::collections::HashMap;
+
+fn is_prime(n: &i64) -> bool {
+    if *n == 2 || *n == 3 {
+        return true;
+    }
+
+    if *n <= 1 || *n % 2 == 0 || *n % 3 == 0 {
+        return false;
+    }
+
+    let mut i: i64 = 5;
+
+    while i * i <= *n {
+        if *n % i == 0 || *n % (i + 2) == 0 {
+            return false;
+        }
+        i += 6;
+    }
+    return true
+}
+
+fn get_primes() -> Vec<i64> {
+    const N: i64 = 10_i64.pow(4);
+    let mut primes: Vec<i64> = Vec::new();
+    for i in 0..N + 1 {
+        if is_prime(&i) {
+            primes.push(i);
+        }
+    }
+    return primes
+}
+
+fn is_in(n: &i64, primes: &Vec<i64>) -> bool {
+    let size = primes.len();
+    let mut low = 0;
+    let mut high = size - 1;
+    
+    while low <= high {
+        let mid = (low + high)/2;
+        if primes[mid] == *n {
+            return true
+        } else if primes[mid] > *n {
+            high = mid - 1;
+        } else {
+            low = mid + 1;
+        }
+    }
+    
+    return false
+}
+ 
+fn find_index(n: &i64, primes: &Vec<i64>) -> Option<usize> {
+    let size = primes.len();
+    let mut low = 0;
+    let mut high = size - 1;
+    let max = (*n as f64).sqrt().floor() as i64;
+    
+    while low <= high {
+        let mid = (low + high)/2;
+        if primes[mid] > max {
+            if mid == 0 {
+                return Some(mid)
+            } else if primes[mid - 1] > max {
+                high = mid - 1;
+            } else {
+                return Some(mid)
+            }
+        } else {
+            low = mid + 1;
+        }
+    }
+    return None
+}
+
+fn factor(n: &mut i64, primes: &Vec<i64>) -> HashMap<i64, i64> {
+    let mut factors: HashMap<i64, i64> = HashMap::new();
+    while *n > 1 {
+        if is_in(&n, &primes) {
+            factors.insert(*n, 1);
+            return factors
+        } else {
+            let size = find_index(&n, &primes).unwrap();
+            for i in 0..size {
+                while *n % primes[i] == 0 {
+                    factors.entry(primes[i]).and_modify(|count| { *count += 1 }).or_insert(1);
+                    *n /= primes[i];
+                }
+            }
+        }
+    }
+    return factors
+}
+
+fn modular_exponent(n: &i64, x: &i64) -> i64{
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    if *x == 1 {
+        return n % MOD
+    } else if x % 2 == 0{
+        let new_base = (*n * *n) % MOD;
+        let new_exp = *x/2;
+        return modular_exponent(&new_base, &new_exp) % MOD
+    } else {
+        let new_base = (*n * *n) % MOD;
+        let new_exp = (*x - 1)/2;
+        return (*n *  modular_exponent(&new_base, &new_exp) % MOD) % MOD
+    }
+    
+}
+
+fn mod_inverse(n: &i64) -> i64{
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    if *n % MOD == 0 {
+        return 0
+    } else {
+        return modular_exponent(&n, &(MOD - 2));
+    }
+} 
+
+fn factorial() -> Vec<i64> {
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    const MAX: i64 = 10_i64.pow(4) + 14;
+    let mut dp: Vec<i64> = vec![0; MAX as usize + 1];
+    let mut count: i64 = 0;
+    let mut val: i64 = 1;
+    
+    while count < MAX {
+        val *= count + 1;
+        val %= MOD;
+        dp[count as usize + 1] = val;
+        count += 1;
+    }
+    
+    return dp
+}
+
+impl Solution {
+    pub fn ideal_arrays(n: i32, max_value: i32) -> i32 {
+        const MOD: i64 = 10_i64.pow(9) + 7;
+        let mut ans: i64 = 1;
+    
+        let primes = get_primes();
+        let factorial = factorial();
+        for mut k in 2..max_value as i64 + 1 {
+            let mut val: i64 = 1;
+            let factors = factor(&mut k, &primes);
+            for (_key, value) in &factors {
+                let numer = factorial[(n as i64 + *value - 1) as usize];
+                let first = factorial[*value as usize];
+                let second = factorial[(n as i64 - 1) as usize];
+                let denom = (first * second) % MOD;
+                val *= (numer * mod_inverse(&denom)) % MOD;
+                val %= MOD;
+            }
+            ans += val; 
+            ans %= MOD;
+        }
+    
+        if ans  > 0 {
+            return (ans % MOD) as i32
+        } else {
+            while ans < 0 {
+                ans += MOD;
+            }
+            return (ans % MOD) as i32 
+        }
+    }
+}
+
 //Leetcode 2963
 use std::cmp;
 use std::collections::HashMap;
