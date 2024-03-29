@@ -1,0 +1,68 @@
+//Leetcode 2963
+use std::cmp;
+use std::collections::HashMap;
+
+impl Solution {
+    pub fn number_of_good_partitions(nums: Vec<i32>) -> i32 {
+        let size = nums.len();
+        let mut index_map: HashMap<i32, usize> = HashMap::new();
+        let mut interval_map: HashMap<usize, usize> = HashMap::new();
+    
+        const MOD: i64 = 10_i64.pow(9) + 7;
+        let mut powers: Vec<i64> = vec![1; size];
+        for idx in 0..size - 1 {
+            powers[idx + 1] = 2*powers[idx];
+            powers[idx + 1] %= MOD;
+        }
+    
+        for idx in 0..size {
+            if index_map.contains_key(&nums[idx]) {
+                let val = *index_map.get(&nums[idx]).unwrap();
+                interval_map.entry(val).and_modify(|val| *val = idx).or_insert(idx);
+            } else {
+                index_map.insert(nums[idx], idx);
+            }
+        }
+    
+        if interval_map.is_empty() {
+            let mut res: i64 = powers[size - 1];
+            while res < 0 {
+                res += MOD;
+            }
+            return (res % MOD) as i32
+        }
+    
+        let mut pre_interval: Vec<Vec<usize>> = Vec::new();
+        for (key, val) in interval_map {
+            pre_interval.push(vec![key, val]);
+        }
+    
+        pre_interval.sort_unstable_by_key(|v| v[0]);
+        let mut interval: Vec<Vec<usize>> = Vec::new();
+        for vec in pre_interval {
+            if interval.len() == 0 {
+                interval.push(vec);
+            } else {
+                let prev_min = interval[interval.len() - 1][0];
+                let prev_max = interval[interval.len() - 1][1];
+                if vec[0] < prev_max {
+                    interval.pop();
+                    interval.push(vec![prev_min, cmp::max(vec[1] , prev_max)]);
+                } else {
+                    interval.push(vec);
+                } 
+            }
+        }
+    
+        let mut num_blocks: usize = interval[0][0] + size - interval[interval.len() - 1][1];
+        for idx in 0..interval.len() - 1 {
+            num_blocks += interval[idx + 1][0] - interval[idx][1];
+        }
+    
+        let mut res = powers[num_blocks - 1];
+        while res < 0 {
+            res += MOD;
+        }
+        return (res % MOD) as i32
+    }
+}
