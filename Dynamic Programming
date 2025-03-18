@@ -1,3 +1,4 @@
+//Leetcode 3490
 #[derive(Debug, Clone)]
 struct Element {
     arr: [i64; 10],
