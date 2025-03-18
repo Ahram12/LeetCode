@@ -1,3 +1,84 @@
+#[derive(Debug, Clone)]
+struct Element {
+    arr: [i64; 10],
+    curr_idx: i64,
+    len: i64
+}
+
+fn main() {
+    let d: i64 = 9;
+    let mut stk: Vec<Element> = Vec::new();
+    stk.push(Element{arr: [0; 10], curr_idx: -1, len: 0});
+    let mut ans: Vec<Element> = Vec::new();
+   
+    while !stk.is_empty() {
+        let curr = stk.pop().unwrap();
+        if curr.curr_idx < 9 {
+            for i in 0..=d-curr.len {
+                let mut temp = curr.clone();
+                temp.arr[(temp.curr_idx + 1) as usize] = i;
+                temp.len += i;
+                temp.curr_idx += 1;
+                if temp.len == d {
+                    ans.push(temp);
+                } else {
+                    stk.push(temp);
+                }
+            }
+        }
+    }
+    
+    let num: Vec<usize> = vec![9, 9, 9, 3, 8, 7, 5, 1, 1];
+    let mut f: Vec<i64> = vec![1; d as usize + 1];
+    
+    for i in 0..d as usize {
+        f[i + 1] = (i as i64 + 1)*f[i];
+    }
+   
+    let mut count: i64 = 0;
+    for element in &ans {
+        let mut sum: i64 = 0;
+        let mut prod: i64 = 1;
+        let mut fact: i64 = 1;
+        for i in 0..10 {
+            sum += (i as i64)*element.arr[i];
+            if element.arr[i] > 0 {
+                prod *= (i as i64).pow(element.arr[i] as u32);
+                fact *= f[element.arr[i] as usize];
+            }
+        }
+        if sum > 0 && prod % sum == 0 {
+            let mut temp: Element = element.clone();
+            for j in 0..num.len() {
+                if j > 0 {
+                    for i in 0..num[j] {
+                        if temp.arr[i] > 0 {
+                            count += f[d as usize - j - 1]/(fact/temp.arr[i]);
+                        }
+                    }
+                } else {
+                    for i in 1..num[j] {
+                        if temp.arr[i] > 0 {
+                            count += f[d as usize - j - 1]/(fact/temp.arr[i]);
+                        }
+                    }
+                }
+                
+                if temp.arr[num[j]] == 0 {
+                    break
+                }else {
+                    fact /= temp.arr[num[j]];
+                    temp.arr[num[j]] -= 1;
+                }
+            }
+        }
+    }
+   
+   
+    println!("{:?}", count)
+}
+
+
 //Leetcode 446
 use std::collections::HashMap;
 
