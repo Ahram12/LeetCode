@@ -13,8 +13,8 @@ fn sum(n: &u32) -> i64 {
 }
 
 fn main() {
-    let r: i64 = 55;
-    let l: i64 = 3;
+    let l: i64 = 14;
+    let r: i64 = 65537;
     let mut temp: i64 = r;
     let mut r_exp: u32 = 0;
     
@@ -30,32 +30,28 @@ fn main() {
         temp /= 4;
         l_exp += 1;
     }
-    /*
+    
+    let r_count: i64 = r - 4_i64.pow(r_exp - 1) + 1;
+    let l_count: i64 = 4_i64.pow(l_exp) - l;
     let mut res: i64 = 0;
     if l_exp < r_exp {
-        let r_count: i64 = r - 4_i64.pow(r_exp - 1) + 1;
-        let l_count: i64 = 4_i64.pow(l_exp) - l;
-        
         if r_count & 1 == 0 {
-            res += (r_count/2)*(r_exp as i64);
-            res += sum(&(r_exp - 1)) - sum(&(l_exp));
-            if l _count & 1 == 0 {
+            if l_count & 1 == 0 {
+                res += (r_count/2)*(r_exp as i64);
+                res += sum(&(r_exp - 1)) - sum(&(l_exp));
                 res += (l_count/2)*(l_exp as i64);
             } else {
-            
-                res += sum(&(r_exp - l_exp - 2));
-                res *= 4_i64.pow(l_exp);
-                
-              1  l_exp + 2 - l _exp + 1
-              2  l_exp + 3 - l _exp + 2
-                
-                res += (r_count/2)*(r_exp - l_exp);
-                let k: i64 = r_count + l_count + 1;
+                if r_exp >= l_exp + 2 {
+                    res += sum(&(r_exp - l_exp - 2));
+                    res *= 4_i64.pow(l_exp + 1);
+                }
+                res += (r_count/2)*(r_exp - l_exp) as i64;
+                let k: i64 = (r_count + l_count + 1) as i64;
                 if l_exp & 1 == 0 {
-                    let n = l_exp/2;
+                    let n: i64 = (l_exp/2) as i64;
                     res += n*(n + 1) + k - 2;
                 } else {
-                    let n = (k + 1)/2;
+                    let n = ((l_exp + 1)/2) as i64;
                     res += n*n + (k - 1)/2;
                 }
                 /*
@@ -67,20 +63,21 @@ fn main() {
                 f[2n][k] = n*(n + 1) + k - 2
                 */
             }
-        }   else {
+        } else {
             if l_count & 1 == 0 {
-                
+                if (l_exp + r_exp) & 1 == 0 {
+                    res += (4_i64.pow(r_exp) + r_count)*(r_exp - l_exp) as i64
+                }
             }
         }
     }
-    */
+    
 /*    
    1(4^1 - 4^0) = 3
    2(4^2 - 4^1) = 2*12
    3(4^3 - 4^2) = 3*48
   */ 
-    println!("{:?}", sum(&3))
-    
+    println!("{:?}", res)
     
 }
 
