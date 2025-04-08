@@ -1,3 +1,80 @@
+//Leetcode 3509
+use std::cmp;
+use std::collections::BTreeSet;
+
+fn main() {
+    let arr: Vec<i32> = vec![1, 2, 3];
+    let limit: i32 = 10;
+    let k: i32 = 2;
+    let n = arr.len();
+    let m: usize = 12*n + 4;
+    let l: i32 = 6*n as i32;
+    let mut odd_map: Vec<BTreeSet<i32>> = vec![BTreeSet::new(); m];
+    let mut even_map: Vec<BTreeSet<i32>> = vec![BTreeSet::new(); m];
+    let mut res: i32 = -1;
+    
+    let mut f: Vec<Vec<bool>> = vec![vec![false; m]; 2];
+    
+    f[1][(arr[0] + l) as usize] = true;
+    odd_map[(arr[0] + l) as usize].insert(arr[0]);
+    if k == arr[0] {
+        res = cmp::max(res, arr[0]);
+    }
+    
+    for i in 1..n {
+        for t in 0..2 {
+            if t == 0 {
+                for s in -l..=cmp::min(l, l + 2 - arr[i]) {
+                    let prev: bool = f[0][(s + l) as usize];
+                    f[0][(s + l) as usize] = f[0][(s + l) as usize] || f[1][(s + l + arr[i]) as usize];
+                    if f[1][(s + l + arr[i]) as usize] {
+                        let upper: i32 = limit/arr[i];
+                        let set_iter = odd_map[(s + l + arr[i]) as usize].iter();
+                        for &val in set_iter {
+                            if val > upper {
+                                break
+                            } else {
+                                even_map[(s + l) as usize].insert(val*arr[i]);
+                                if k == s {
+                                    res = cmp::max(res, val*arr[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                for s in cmp::max(-l, arr[i] - l)..=l {
+                    let prev: bool = f[1][(s + l) as usize];
+                    f[1][(s + l) as usize] =  f[1][(s + l) as usize] || f[0][(s + l - arr[i]) as usize];
+                    if f[0][(s + l - arr[i]) as usize] {
+                        let upper = limit/arr[i];
+                        let set_iter = even_map[(s + l - arr[i]) as usize].iter();
+                        for &val in set_iter {
+                            if val > upper {
+                                break
+                            } else {
+                                odd_map[(s + l) as usize].insert(val*arr[i]);
+                                if k == s {
+                                    res = cmp::max(res, val*arr[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+                f[1][(arr[i] + l) as usize] = true;
+                odd_map[(arr[i] + l) as usize].insert(arr[i]);
+                if k == arr[i] {
+                    res = cmp::max(res, arr[i]);
+                }
+                
+            }
+        }
+    }
+    println!("{:?}", res)
+    
+}
+
+
 //Leetcode 3490
 #[derive(Debug, Clone)]
 struct Element {
