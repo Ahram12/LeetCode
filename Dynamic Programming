@@ -43,7 +43,7 @@ fn main() {
                 }
             } else {
                 for s in cmp::max(-l, arr[i] - l)..=l {
-                    f[i - 1][1][(s + l) as usize] =  f[i - 1][1][(s + l) as usize] || f[i - 1][0][(s + l - arr[i]) as usize];
+                    f[i][1][(s + l) as usize] =  f[i - 1][1][(s + l) as usize] || f[i - 1][0][(s + l - arr[i]) as usize];
                     if f[i - 1][0][(s + l - arr[i]) as usize] {
                         let upper: i32 = if arr[i] > 0 {limit/arr[i]} else {i32::MAX};
                         let set_iter = even_map[(s + l - arr[i]) as usize].iter();
