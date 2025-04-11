@@ -1,3 +1,77 @@
+use std::cmp;
+
+fn euclid(a: &usize, b: &usize) -> usize {
+    let mut p: usize = cmp::min(*a, *b);
+    let mut q: usize = cmp::max(*a, *b);
+    
+    loop {
+        if q % p == 0 {
+            return p
+        } else {
+            let temp = p;
+             p = q % p;
+             q = temp;
+        }
+    }
+}
+
+fn main() {
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    let nums: Vec<i32> = vec![1, 1, 1, 1, 3, 4, 5, 5, 6, 3, 3, 4, 4, 4, 4, 31, 52, 26, 62, 7, 7, 7, 9, 81, 162, 75, 25];
+    let size = nums.len();
+    let max_val: usize = *nums.iter().max().unwrap() as usize;
+    
+    let mut gcd: Vec<Vec<usize>> = vec![vec![0; max_val + 1]; max_val + 1]; 
+    for j in 1..=max_val {
+        for i in 1..=j {
+            gcd[i][j] = euclid(&i, &j);
+            gcd[j][i] = gcd[i][j]; 
+        }
+    }
+    
+    let mut s: Vec<Vec<i64>> = vec![vec![0; max_val + 1]; size];
+    s[0][nums[0] as usize] += 1;
+    for i in 1..size {
+        s[i][nums[i] as usize] += 1;
+        s[i][nums[i] as usize] %= MOD;
+        for d in 1..=max_val {
+            s[i][d] += s[i - 1][d];
+            s[i][d] %= MOD;
+            s[i][gcd[d][nums[i] as usize]] += s[i - 1][d];
+            s[i][gcd[d][nums[i] as usize]] %= MOD;
+            
+        }
+    }
+    
+    let mut p:  Vec<Vec<Vec<i64>>> = vec![vec![vec![0; max_val + 1]; max_val + 1]; size];
+    for i in 1..size {
+        for d1 in 1..=max_val {
+            p[i][d1][nums[i] as usize] += s[i - 1][d1];
+            p[i][d1][nums[i] as usize] %= MOD;
+            p[i][nums[i] as usize][d1] += s[i - 1][d1];
+            p[i][nums[i] as usize][d1] %= MOD;
+            for d2 in 1..=max_val {
+                p[i][d1][d2] += p[i - 1][d1][d2];
+                p[i][d1][d2] %= MOD;
+                p[i][gcd[d1][nums[i] as usize]][d2] += p[i - 1][d1][d2];
+                p[i][gcd[d1][nums[i] as usize]][d2] %= MOD;
+                p[i][d1][gcd[d2][nums[i] as usize]] += p[i - 1][d1][d2];
+                p[i][d1][gcd[d2][nums[i] as usize]] %= MOD;
+            }
+        }
+    }
+    
+    let mut sum: i64 = 0;
+    for d in 1..=max_val {
+        sum += p[size - 1][d][d];
+        sum %= MOD;
+    }
+    
+    
+    println!("{:?}", sum)
+    
+}
+
 //Leetcode 3509
 use std::cmp;
 use std::collections::BTreeSet;
