@@ -113,7 +113,7 @@ impl Solution {
                 if zeros[n - 1][0][(k + l) as usize] || zeros[n - 1][1][(k + l) as usize] {
                     return 0
                 } else {       
-                    -1
+                    return -1
                 }
             }
         }
