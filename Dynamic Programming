@@ -1,30 +1,41 @@
+//Leetcode 3519
+use std::cmp;
 use std::collections::VecDeque;
 
-fn main() {
-    const MOD: i64 = 10_i64.pow(9) + 7;
-    
-    let mut c: Vec<Vec<i64>> = vec![vec![0; 110]; 110];
-    for j in 0..110 {
-        for i in 0..=j {
-            if i == 0 || i == j {
-                c[j][i] = 1;
-            } else {
-                c[j][i] = (c[j - 1][i] + c[j - 1][i - 1]) % MOD;
+fn convert(num: &VecDeque<usize>, b: &usize) -> VecDeque<usize> {
+    let b: usize = *b;
+    let mut num: VecDeque<usize> = num.clone();
+    let mut base: VecDeque<usize> = VecDeque::new();
+   
+    loop {
+        if num.is_empty() {
+            break
+        } else {
+            let mut quotient: VecDeque<usize> = VecDeque::new();
+            let mut sum: usize = 0;
+            while !num.is_empty() {
+                sum *= 10;
+                sum += num.pop_front().unwrap();
+                quotient.push_back(sum/b);
+                let rem = sum - (sum/b)*b;
+                sum -= (sum/b)*b;
+                if num.is_empty() {
+                    base.push_front(sum);
+                }
             }
+            while !quotient.is_empty() && quotient[0] == 0 {
+                quotient.pop_front();
+            }
+            num = quotient.clone();
         }
     }
-    
-    let b: usize = 3;
-    let n: usize = 100;
-    
-    let mut p: Vec<Vec<i64>> = vec![vec![0; b + 1]; n + 1];
-    for j in 1..=n {
-        for i in 1..b {
-            p[j][i + 1] = (p[j][i] + c[j + b - i - 2][b - i - 1]) % MOD;
-        }
-    }
-    
-    let num: VecDeque<usize> = [2, 1].into();
+
+    return base
+}
+
+fn helper(b: &usize, num: &VecDeque<usize>, c: &Vec<Vec<i64>>, p: &Vec<Vec<i64>>) -> (i64, bool) {
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    let b: usize = *b;
     let size = num.len();
     let mut res: i64 = (c[size + b - 2][b - 1] - 1 + p[size][num[0]]) % MOD;
     let mut i: usize = 1;
@@ -37,12 +48,65 @@ fn main() {
     if i == size {
         res += 1;
     }
+
+    return (res, i == size)
+
+}
+
+impl Solution {
+    pub fn count_numbers(l: String, r: String, b: i32) -> i32 {
+        let l: &[u8] = l.as_bytes();
+        let r: &[u8] = r.as_bytes();
+
+        let mut lower: VecDeque<usize> = VecDeque::new();
+        for i in 0..l.len() {
+            lower.push_back((l[i] - b'0') as usize);
+        }
+
+        let mut upper: VecDeque<usize> = VecDeque::new();
+        for i in 0..r.len() {
+            upper.push_back((r[i] - b'0') as usize);
+        }
+
+        let b: usize = b as usize;
+        let first = convert(&lower, &b).clone();
+        let second = convert(&upper, &b).clone();
+
+        let m: usize = cmp::max(first.len(), second.len());
+        const MOD: i64 = 10_i64.pow(9) + 7;
     
-    
-    
-    println!("{:?}", res)
-    
-    
+        let mut c: Vec<Vec<i64>> = vec![vec![0; m + 11]; m + 11];
+        for j in 0..m + 11 {
+            for i in 0..=j {
+                if i == 0 || i == j {
+                    c[j][i] = 1;
+                } else {
+                    c[j][i] = (c[j - 1][i] + c[j - 1][i - 1]) % MOD;
+                }
+            }
+        }
+
+        let mut p: Vec<Vec<i64>> = vec![vec![0; b + 1]; m + 1];
+        for j in 1..=m {
+            for i in 1..b {
+                p[j][i + 1] = (p[j][i] + c[j + b - i - 2][b - i - 1]) % MOD;
+            }
+        }
+
+        let (res1, sgn) = helper(&b, &first, &c, &p);
+        let (res2, _ ) = helper(&b, &second, &c, &p);
+
+        let mut res: i64 = res2 - res1;
+        if sgn {
+            res += 1;
+        }
+        
+        while res < 0 {
+            res += MOD;
+        }
+        return (res % MOD) as i32
+
+    }
 }
 
 
