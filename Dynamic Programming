@@ -1,3 +1,51 @@
+use std::collections::VecDeque;
+
+fn main() {
+    const MOD: i64 = 10_i64.pow(9) + 7;
+    
+    let mut c: Vec<Vec<i64>> = vec![vec![0; 110]; 110];
+    for j in 0..110 {
+        for i in 0..=j {
+            if i == 0 || i == j {
+                c[j][i] = 1;
+            } else {
+                c[j][i] = (c[j - 1][i] + c[j - 1][i - 1]) % MOD;
+            }
+        }
+    }
+    
+    let b: usize = 3;
+    let n: usize = 100;
+    
+    let mut p: Vec<Vec<i64>> = vec![vec![0; b + 1]; n + 1];
+    for j in 1..=n {
+        for i in 1..b {
+            p[j][i + 1] = (p[j][i] + c[j + b - i - 2][b - i - 1]) % MOD;
+        }
+    }
+    
+    let num: VecDeque<usize> = [2, 1].into();
+    let size = num.len();
+    let mut res: i64 = (c[size + b - 2][b - 1] - 1 + p[size][num[0]]) % MOD;
+    let mut i: usize = 1;
+    while i < size && num[i - 1] <= num[i] {
+        res += p[size - i][num[i]] - p[size - i][num[i - 1]];
+        res %= MOD;
+        i += 1;
+    }
+    
+    if i == size {
+        res += 1;
+    }
+    
+    
+    
+    println!("{:?}", res)
+    
+    
+}
+
+
 //Leetcode 3509
 use std::cmp;
 use std::collections::BTreeSet;
