@@ -1,4 +1,57 @@
+fn main() {
+    let s: String = "abccaaaaddddba".to_string();
+    let mut k: f64 = (2.0_f64).log2();
+    const ZERO: f64 = 0.000000001;
+    
+    let vec: &[u8] = s.as_bytes();
+    let size = vec.len();
+    let mut map: [usize; 26] = [0; 26];
+    for i in 0..size {
+        map[(vec[i] - b'a') as usize] += 1;
+    }
+    
+    let mut f: Vec<f64> = vec![0.0; 1 + (size + 1)/2];
+    for i in 1..=(size + 1)/2 {
+        f[i] = f[i - 1] + (i as f64).log2();
+    }
 
+    let mut res: Vec<u8> = Vec::new();
+    if size & 1 == 0 {
+        let mut total: f64 = f[(size + 1)/2];
+        for i in 0..26 {
+            map[i] /= 2;
+            total -= f[map[i]];
+        }
+        for _ in 0..size/2 {
+            let mut p: Vec<usize> = vec![0; 27];
+            for i in 0..26 {
+                p[i + 1] = map[i] + p[i];
+            }
+            for i in 0..26 {
+                if p[i + 1] > 0 {
+                    if total + (p[i + 1] as f64).log2() + ZERO > k + (p[26] as f64).log2() {
+                        res.push(i as u8 + b'a');
+                        if total + (p[i] as f64).log2() < ZERO + (p[26] as f64).log2() + k {
+                            let left = (2.0_f64).powf(total + (p[i] as f64).log2() - (p[26] as f64).log2());
+                            let mut right = (2.0_f64).powf(k);
+                            right -= left;
+                            k = (right).log2();
+                        }
+                        total += (map[i] as f64).log2() - (p[26] as f64).log2();
+                        map[i] -= 1;
+                        break
+                    } 
+                }
+            }
+        }
+    }
+    
+    
+    
+    println!("{:?}", res)
+    
+    
+}
 //Leetcode 920 
 fn binom(n: &i32) -> Vec<Vec<i64>> {
     const MOD: i64 = 10_i64.pow(9) + 7;
