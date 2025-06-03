@@ -1,0 +1,112 @@
+use std::cmp;
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
+    //Minimum corresponding value,
+    max_value: i64,
+    
+    //Keep lazy value for range updates:
+    lazy: i64, 
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+
+impl Node {
+    fn new(range: (usize, usize), max_value: i64) -> Node {
+         return Node {range: range, max_value: max_value, lazy: 0, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i64>, range: (usize, usize)) -> Option<Box<Self>> {
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, arr[range.0]);
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            node.max_value = cmp::max(node.left.as_ref().unwrap().max_value,
+                node.right.as_ref().unwrap().max_value);
+        }
+        
+        return Some(Box::new(node))
+    }
+    
+    fn push(&mut self) {
+        let left = self.left.as_mut().unwrap();
+        let right = self.right.as_mut().unwrap();
+        left.max_value += self.lazy;
+        left.lazy += self.lazy;
+        right.max_value += self.lazy;
+        right.lazy += self.lazy;
+        self.lazy = 0;
+    }
+    
+    fn query(&mut self, range: (usize, usize)) -> i64 {
+        if  range.0 > range.1 {
+            return i64::MIN
+        }
+        
+        if  self.range.0 == range.0 && self.range.1 == range.1 {
+            return self.max_value
+        }
+        
+        self.push();
+        
+        let mut max_value = 0;
+
+        if let Some(ref mut left) = self.left {
+            let left_query = left.query((range.0, cmp::min(range.1, left.range.1))); 
+                max_value = cmp::max(max_value, left_query)
+        }
+        
+        
+        if let Some(ref mut right) = self.right {
+            let right_query = right.query((cmp::max(range.0, right.range.1), range.1));
+                max_value = cmp::max(max_value, right_query)
+        }
+        
+       return max_value
+    }
+    
+    fn update(&mut self, range: (usize, usize), add: i64) {
+        if range.0 > range.1 {
+            return 
+        }
+        
+         if self.range.0 == range.0 && self.range.1 == range.1 {
+            self.max_value += add;
+            self.lazy += add;
+        } else {
+            self.push();
+            let mid = (self.range.0 + self.range.1)/2;
+            self.left.as_mut().unwrap().update((range.0, cmp::min(mid, range.1)), add);
+            self.right.as_mut().unwrap().update((cmp::max(range.0, mid + 1), range.1), add);
+            let left = self.left.as_ref().unwrap().max_value;
+            let right = self.right.as_ref().unwrap().max_value;
+            self.max_value = cmp::max(left, right);
+        }
+    }
+}
+
+
+fn main() {
+    let arr = vec![5, 6, 8, 4, 2, 7];
+    let mut tree = Node::build(&arr, (0, arr.len() - 1)).unwrap();
+    let left: usize = 4;
+    let right: usize = 5;
+    let add: i64 = 8;
+    tree.update((left, right), add);
+    println!("{:?}", tree.max_value)
+}
