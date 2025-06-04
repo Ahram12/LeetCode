@@ -5,8 +5,11 @@ struct Node {
     //Range of array represented by node
     range: (usize, usize),
     
-    //Minimum corresponding value,
+    //Maximum corresponding value,
     max_value: i64,
+    
+    //Corresponding index of maximum value
+    max_index: usize,
     
     //Keep lazy value for range updates:
     lazy: i64, 
@@ -20,8 +23,8 @@ struct Node {
 
 
 impl Node {
-    fn new(range: (usize, usize), max_value: i64) -> Node {
-         return Node {range: range, max_value: max_value, lazy: 0, left: None, right: None }
+    fn new(range: (usize, usize), max_value: i64, max_index: usize) -> Node {
+         return Node {range: range, max_value: max_value, max_index: max_index, lazy: 0, left: None, right: None }
     }
     
     fn build(arr: &Vec<i64>, range: (usize, usize)) -> Option<Box<Self>> {
@@ -31,13 +34,23 @@ impl Node {
         
         let mid = (range.0 + range.1) / 2;
         
-        let mut node = Node::new(range, arr[range.0]);
+        let mut node = Node::new(range, arr[range.0], range.0);
         
         if range.0 < range.1 {
             node.left = Self::build(arr, (range.0, mid));
             node.right = Self::build(arr, (mid + 1, range.1));
-            node.max_value = cmp::max(node.left.as_ref().unwrap().max_value,
-                node.right.as_ref().unwrap().max_value);
+            let left_max = node.left.as_ref().unwrap().max_value;
+            let left_idx = node.left.as_ref().unwrap().max_index;
+            let right_max = node.right.as_ref().unwrap().max_value;
+            let right_idx = node.right.as_ref().unwrap().max_index;
+            
+            if left_max >= right_max {
+                node.max_value = left_max;
+                node.max_index = left_idx;
+            } else {
+                node.max_value = right_max;
+                node.max_index = right_idx;
+            }
         }
         
         return Some(Box::new(node))
@@ -53,31 +66,38 @@ impl Node {
         self.lazy = 0;
     }
     
-    fn query(&mut self, range: (usize, usize)) -> i64 {
+    fn query(&mut self, range: (usize, usize)) -> (i64, usize) {
         if  range.0 > range.1 {
-            return i64::MIN
+            return (i64::MIN, range.0)
         }
         
         if  self.range.0 == range.0 && self.range.1 == range.1 {
-            return self.max_value
+            return (self.max_value, range.0)
         }
         
         self.push();
         
-        let mut max_value = 0;
+        let mut max_value = i64::MIN;
+        let mut max_idx = 0;
 
         if let Some(ref mut left) = self.left {
             let left_query = left.query((range.0, cmp::min(range.1, left.range.1))); 
-            max_value = cmp::max(max_value, left_query)
+            if max_value < left_query.0 {
+                max_value = left_query.0;
+                max_idx = left_query.1;
+            }
         }
         
         
         if let Some(ref mut right) = self.right {
             let right_query = right.query((cmp::max(range.0, right.range.1), range.1));
-            max_value = cmp::max(max_value, right_query)
+            if max_value < right_query.0 {
+                max_value = right_query.0;
+                max_idx = right_query.1;
+            }
         }
         
-       return max_value
+       return (max_value, max_idx)
     }
     
     fn update(&mut self, range: (usize, usize), add: i64) {
@@ -93,9 +113,17 @@ impl Node {
             let mid = (self.range.0 + self.range.1)/2;
             self.left.as_mut().unwrap().update((range.0, cmp::min(mid, range.1)), add);
             self.right.as_mut().unwrap().update((cmp::max(range.0, mid + 1), range.1), add);
-            let left = self.left.as_ref().unwrap().max_value;
-            let right = self.right.as_ref().unwrap().max_value;
-            self.max_value = cmp::max(left, right);
+            let left_max = self.left.as_ref().unwrap().max_value;
+            let left_idx =  self.left.as_ref().unwrap().max_index;
+            let right_max = self.right.as_ref().unwrap().max_value;
+            let right_idx =  self.right.as_ref().unwrap().max_index;
+            if left_max >= right_max {
+                self.max_value = left_max;
+                self.max_index = left_idx;
+            } else {
+                self.max_value = right_max;
+                self.max_index = right_idx;
+            }
         }
     }
 }
@@ -105,8 +133,8 @@ fn main() {
     let arr = vec![5, 6, 8, 4, 2, 7];
     let mut tree = Node::build(&arr, (0, arr.len() - 1)).unwrap();
     let left: usize = 4;
-    let right: usize = 5;
+    let right: usize = 4;
     let add: i64 = 8;
     tree.update((left, right), add);
-    println!("{:?}", tree.max_value)
+    println!("{:?}", tree.max_index)
 }
