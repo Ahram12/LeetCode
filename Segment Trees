@@ -1,4 +1,5 @@
 use std::cmp;
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
 struct Node {
@@ -72,13 +73,13 @@ impl Node {
         }
         
         if  self.range.0 == range.0 && self.range.1 == range.1 {
-            return (self.max_value, range.0)
+            return (self.max_value, self.max_index)
         }
         
         self.push();
         
         let mut max_value = i64::MIN;
-        let mut max_idx = 0;
+        let mut max_idx = range.0;
 
         if let Some(ref mut left) = self.left {
             let left_query = left.query((range.0, cmp::min(range.1, left.range.1))); 
@@ -130,11 +131,67 @@ impl Node {
 
 
 fn main() {
-    let arr = vec![5, 6, 8, 4, 2, 7];
-    let mut tree = Node::build(&arr, (0, arr.len() - 1)).unwrap();
-    let left: usize = 4;
-    let right: usize = 4;
-    let add: i64 = 8;
-    tree.update((left, right), add);
-    println!("{:?}", tree.max_index)
+    let arr: Vec<i32> = vec![5, 6, 8, 4, 7, 2, 7];
+    let queries: Vec<Vec<i32>> = vec![vec![1,2], vec![3, 3]];
+    let n = arr.len();
+    let m = queries.len();
+    // let mut tree = Node::build(&arr, (0, arr.len() - 1)).unwrap();
+    // let left: usize = 3;
+    // let right: usize = 5;
+    // let add: i64 = 8;
+    // tree.update((left, right), add);
+    let max_val: usize = 8;
+    
+    let mut sieve_array: Vec<bool> = vec![true; max_val + 1];
+    let mut count_map: Vec<usize> = vec![0; max_val + 1];
+    let mut count: usize = 0;
+    sieve_array[0] = false;
+    sieve_array[1] = false;
+ 
+    for i in 2..=max_val {
+        if sieve_array[i] {
+            count_map[i] = count;
+            count += 1;
+            for j in (2*i..max_val + 1).step_by(i) {
+                sieve_array[j] = false;
+            }
+        }
+    }
+    
+    let mut index_arr: Vec<BTreeSet<usize>> = vec![BTreeSet::new(); count];
+    let mut t: Vec<i64> = vec![0; n - 1];
+    let mut pre: i64 = 0;
+    let mut suff: i64 = 0;
+    let mut p: Vec<bool> = vec![false; count];
+    let mut s: Vec<bool> = vec![false; count];
+    
+    for i in 0..n - 1 {
+        if sieve_array[arr[i] as usize] {
+            if !p[count_map[arr[i] as usize]] {
+                pre += 1;
+                p[count_map[arr[i] as usize]] = true;
+            }
+            index_arr[count_map[arr[i] as usize]].insert(i);
+        }
+        t[i] += pre;
+        
+        if sieve_array[arr[n - 1 - i] as usize] {
+            if !s[count_map[arr[n - 1 - i] as usize]] {
+                suff += 1;
+                s[count_map[arr[n - 1 - i] as usize]] = true;
+            }
+        }
+        
+        t[n - 2 - i] += suff;
+    }
+    
+    if sieve_array[arr[n - 1] as usize] {
+        index_arr[count_map[arr[n - 1] as usize]].insert(n - 1);
+    }
+    
+    let mut tree = Node::build(&t, (0, n - 2)).unwrap();
+    
+    
+     println!("{:?}", tree)
+    
 }
