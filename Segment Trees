@@ -45,7 +45,7 @@ impl Node {
             let right_max = node.right.as_ref().unwrap().max_value;
             let right_idx = node.right.as_ref().unwrap().max_index;
             
-            if left_max >= right_max {
+            if left_max > right_max {
                 node.max_value = left_max;
                 node.max_index = left_idx;
             } else {
@@ -92,7 +92,7 @@ impl Node {
         
         if let Some(ref mut right) = self.right {
             let right_query = right.query((cmp::max(range.0, right.range.1), range.1));
-            if max_value < right_query.0 {
+            if max_value <= right_query.0 {
                 max_value = right_query.0;
                 max_idx = right_query.1;
             }
@@ -118,7 +118,7 @@ impl Node {
             let left_idx =  self.left.as_ref().unwrap().max_index;
             let right_max = self.right.as_ref().unwrap().max_value;
             let right_idx =  self.right.as_ref().unwrap().max_index;
-            if left_max >= right_max {
+            if left_max > right_max {
                 self.max_value = left_max;
                 self.max_index = left_idx;
             } else {
@@ -131,7 +131,8 @@ impl Node {
 
 
 fn main() {
-    let arr: Vec<i32> = vec![5, 6, 8, 4, 7, 2, 7];
+    let mut arr: Vec<i32> = vec![2, 2, 3, 1, 2];
+    //vec![5, 6, 8, 4, 7, 2, 7];
     let queries: Vec<Vec<i32>> = vec![vec![1,2], vec![3, 3]];
     let n = arr.len();
     let m = queries.len();
@@ -140,7 +141,7 @@ fn main() {
     // let right: usize = 5;
     // let add: i64 = 8;
     // tree.update((left, right), add);
-    let max_val: usize = 8;
+    let max_val: usize = 3;
     
     let mut sieve_array: Vec<bool> = vec![true; max_val + 1];
     let mut count_map: Vec<usize> = vec![0; max_val + 1];
@@ -190,8 +191,48 @@ fn main() {
     }
     
     let mut tree = Node::build(&t, (0, n - 2)).unwrap();
+    let mut res: Vec<i64> = Vec::new();
+    
+    for j in 0..m {
+        if sieve_array[arr[queries[j][0] as usize] as usize] {
+            let i: usize = *index_arr[count_map[arr[queries[j][0] as usize] as usize]].first().unwrap();
+            let k: usize = *index_arr[count_map[arr[queries[j][0] as usize] as usize]].last().unwrap();
+            if i == queries[i][0] as usize {
+                if k == queries[i][0] as usize {
+                    tree.update((0, n - 2), -1);
+                } else {
+                    let l = *index_arr[count_map[arr[queries[j][0] as usize] as usize]].range(i..).next().unwrap();
+                    tree.update((i, l - 1), -1);
+                }
+            } else {
+                if k == queries[i][0] as usize {
+                    let l = *index_arr[count_map[arr[queries[j][0] as usize] as usize]].range(..k).next_back().unwrap();
+                    tree.update((l, queries[j][0] as usize - 1), - 1);
+                }
+            }
+            index_arr[count_map[arr[queries[j][0] as usize] as usize]].remove(&(queries[j][0] as usize));
+        }
+        
+        if sieve_array[queries[j][1] as usize] {
+            if index_arr[count_map[queries[j][1] as usize]].is_empty() {
+                tree.update((0, n - 2), 1);
+            } else {
+                let i: usize = *index_arr[count_map[queries[j][1] as usize]].first().unwrap();
+                let k: usize = *index_arr[count_map[queries[j][1] as usize]].last().unwrap();
+                if (queries[j][0] as usize) < i {
+                    tree.update((0, i - 1), 1);
+                } else if (queries[j][0] as usize) > k {
+                    tree.update((k, queries[j][0] as usize - 1), 1);
+                }
+            }
+            index_arr[count_map[queries[j][1] as usize]].insert(queries[j][0] as usize);
+            arr[queries[j][0] as usize] = queries[j][1];
+        }
+        
+        res.push(tree.query((0, n - 2)).0);
+    }
     
     
-     println!("{:?}", tree)
+     println!("{:?}", res)
     
 }
