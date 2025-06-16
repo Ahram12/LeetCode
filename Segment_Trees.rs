@@ -1,4 +1,171 @@
 use std::cmp;
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
+    //Count of corresponding peaks,
+    count: i32,
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+impl Node {
+    fn new(range: (usize, usize), count: i32) -> Node {
+         return Node {range: range, count: count, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i32>, range: (usize, usize)) -> Option<Box<Self>> {
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, arr[range.0]);
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            let left_count = node.left.as_ref().unwrap().count;
+            let right_count = node.right.as_ref().unwrap().count;
+            node.count = left_count + right_count;
+        }
+        
+        return Some(Box::new(node))
+    }
+    
+    fn query(&mut self, range: (usize, usize)) -> i32 {
+        if  range.0 > range.1 {
+            return 0
+        }
+        
+        if  self.range.0 == range.0 && self.range.1 == range.1 {
+            return self.count
+        }
+        
+        let mut count = 0;
+
+        if let Some(ref mut left) = self.left {
+            count += left.query((range.0, cmp::min(range.1, left.range.1))); 
+        }
+        
+        
+        if let Some(ref mut right) = self.right {
+            count += right.query((cmp::max(range.0, right.range.0), range.1));
+        }
+        
+      return count
+    }
+    
+    fn update(&mut self, index: usize, value: i32) {
+         if self.range.0 == index && self.range.1 == index {
+            self.count = value;
+        } else {
+            let mid = (self.range.0 + self.range.1)/2;
+            if index <= mid {
+                self.left.as_mut().unwrap().update(index, value);
+            } else {
+                self.right.as_mut().unwrap().update(index, value);
+            }
+            let left_count = self.left.as_ref().unwrap().count;
+            let right_count = self.right.as_ref().unwrap().count;
+            self.count = left_count + right_count;
+        }
+    }
+}
+
+fn main() {
+    let mut arr: Vec<i32> = vec![4,1,4,2,1,5];
+    let queries: Vec<Vec<i32>> = vec![vec![2,2,4],vec![1,0,2],vec![1,0,4]];
+    let n = arr.len();
+    let m = queries.len();
+    let mut t: Vec<i32> = vec![0; n];
+    
+    for i in 1..n - 1 {
+        if arr[i - 1] < arr[i] && arr[i] > arr[i + 1] {
+            t[i] = 1;
+        }
+    }
+    let mut tree = Node::build(&t, (0, n - 1)).unwrap();
+    let mut res: Vec<i32> = Vec::new();
+    
+    for i in 0..m {
+        if queries[i][0] == 1 {
+            let left: usize = queries[i][1] as usize;
+            let right: usize = queries[i][2] as usize;
+            res.push(tree.query((left, right)) - t[left] - t[right]);
+        } else {
+            let index: usize = queries[i][1] as usize;
+            let value: i32 = queries[i][2];
+            let mut temp: i32 = 0;
+            
+            if index == 0 {
+                if arr[index + 1] > value && arr[index + 1] > arr[index + 2] {
+                    temp += 1;
+                }
+                if temp != t[index + 1] {
+                    tree.update(index + 1, temp);
+                    t[index + 1] = temp;
+                }
+            } else if index == n - 1 {
+                if arr[index - 1] > value && arr[index - 1] > arr[index - 2] {
+                    temp += 1;
+                }
+                if temp != t[index - 1] {
+                    tree.update(index - 1, temp);
+                    t[index - 1] = temp;
+                }
+            } else {
+                if index > 1 && arr[index - 2] < arr[index - 1] && arr[index - 1] > value {
+                    temp += 1;
+
+                }
+                
+                if temp != t[index - 1] {
+                    tree.update(index - 1, temp);
+                    t[index - 1] = temp;
+                }
+                
+                temp = 0;
+                if arr[index - 1] < value && value > arr[index + 1] {
+                    temp += 1;
+                }
+                
+                if temp != t[index] {
+                    tree.update(index, temp);
+                    t[index] = temp;
+                }
+                
+                temp = 0;
+                if index < n - 2 && value < arr[index + 1] && arr[index + 1] > arr[index + 2] {
+                    temp += 1;
+                }
+                
+                if temp != t[index] {
+                    tree.update(index + 1, temp);
+                    t[index + 1] = temp;
+                }
+            }
+            
+            arr[index] = value;
+        }
+    }
+    
+    
+    
+
+    println!("{:?}", res)
+    
+}
+
+
+use std::cmp;
 use std::collections::BTreeSet;
 
 #[derive(Debug)]
