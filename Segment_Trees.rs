@@ -75,7 +75,7 @@ impl Node {
         
         
         if let Some(ref mut right) = self.right {
-            let right_query = right.query((cmp::max(range.0, right.range.1), range.1));
+            let right_query = right.query((cmp::max(range.0, right.range.0), range.1));
             max_value = cmp::max(max_value, right_query)
         }
         
