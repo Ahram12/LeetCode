@@ -99,7 +99,12 @@ fn main() {
         if queries[i][0] == 1 {
             let left: usize = queries[i][1] as usize;
             let right: usize = queries[i][2] as usize;
-            res.push(tree.query((left, right)) - t[left] - t[right]);
+            let mut sum: i32 = tree.query((left, right));
+            if left != right {
+                sum -= (t[left] + t[right]);
+            } else {
+                sum -= t[left];
+            res.push(sum);
         } else {
             let index: usize = queries[i][1] as usize;
             let value: i32 = queries[i][2];
@@ -147,7 +152,7 @@ fn main() {
                     temp += 1;
                 }
                 
-                if temp != t[index] {
+                if temp != t[index + 1] {
                     tree.update(index + 1, temp);
                     t[index + 1] = temp;
                 }
