@@ -66,7 +66,7 @@ impl Node {
 
     fn update(&mut self, index: usize, value: i64) {
          if self.range.0 == index && self.range.1 == index {
-            self.max = value;
+            self.max = cmp::max(value, 0);
         } else {
             let mid = (self.range.0 + self.range.1)/2;
             if index <= mid {
