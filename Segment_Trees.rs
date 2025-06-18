@@ -5,6 +5,111 @@ struct Node {
     //Range of array represented by node
     range: (usize, usize),
     
+    //Maximum sum without first element
+    prefix: i64,
+    
+    //Maximum sum without last element
+    suffix: i64,
+    
+    //Maximum sum without first or last element
+    middle: i64,
+    
+    //Maximum sum that meets condition overall
+    max: i64,
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+impl Node {
+    fn new(range: (usize, usize), max: i64) -> Node {
+         return Node {range: range, prefix: 0, suffix: 0, middle: 0, max: max, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i32>, range: (usize, usize)) -> Option<Box<Self>> {
+        const MOD: i64 = 10_i64.pow(9) + 7;
+        
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, cmp::max(arr[range.0] as i64, 0));
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            
+            let left_prefix = node.left.as_ref().unwrap().prefix;
+            let left_suffix = node.left.as_ref().unwrap().suffix;
+            let left_middle = node.left.as_ref().unwrap().middle;
+            let left_max = node.left.as_ref().unwrap().max;
+                
+            let right_prefix = node.right.as_ref().unwrap().prefix;
+            let right_suffix = node.right.as_ref().unwrap().suffix;
+            let right_middle = node.right.as_ref().unwrap().middle;
+            let right_max = node.right.as_ref().unwrap().max;
+                
+            node.prefix = cmp::max(left_middle + right_max, left_prefix + right_prefix) % MOD;
+            node.suffix = cmp::max(left_max + right_middle, left_suffix + right_suffix) % MOD;
+            node.middle = cmp::max(left_middle + right_middle, cmp::max(left_prefix + right_middle, left_middle + right_suffix)) % MOD;
+            node.max = cmp::max(left_suffix + right_max, left_max + right_prefix) % MOD;
+        }
+        
+        return Some(Box::new(node))
+    }
+
+    fn update(&mut self, index: usize, value: i64) {
+         if self.range.0 == index && self.range.1 == index {
+            self.max = value;
+        } else {
+            let mid = (self.range.0 + self.range.1)/2;
+            if index <= mid {
+                self.left.as_mut().unwrap().update(index, value);
+            } else {
+                self.right.as_mut().unwrap().update(index, value);
+            }
+            const MOD: i64 = 10_i64.pow(9) + 7;
+            let left_prefix = self.left.as_ref().unwrap().prefix;
+            let left_suffix = self.left.as_ref().unwrap().suffix;
+            let left_middle = self.left.as_ref().unwrap().middle;
+            let left_max = self.left.as_ref().unwrap().max;
+                
+            let right_prefix = self.right.as_ref().unwrap().prefix;
+            let right_suffix = self.right.as_ref().unwrap().suffix;
+            let right_middle = self.right.as_ref().unwrap().middle;
+            let right_max = self.right.as_ref().unwrap().max;
+                
+            self.prefix = cmp::max(left_middle + right_max, left_prefix + right_prefix) % MOD;
+            self.suffix = cmp::max(left_max + right_middle, left_suffix + right_suffix) % MOD;
+            self.middle = cmp::max(left_middle + right_middle, cmp::max(left_prefix + right_middle, left_middle + right_suffix)) % MOD;
+            self.max = cmp::max(left_suffix + right_max, left_max + right_prefix) % MOD;
+        }
+    }
+}
+
+fn main() {
+    let arr: Vec<i32> = vec![3,5,9,4,10];
+    let mut tree = Node::build(&arr, (0, arr.len() - 1)).unwrap();
+    tree.update(1, -2);
+    tree.update(0, 11);
+    println!("{:?}", tree)
+    
+}
+
+
+
+use std::cmp;
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
     //Count of corresponding peaks,
     count: i32,
     
