@@ -1,3 +1,75 @@
+//Leetcode 3504
+
+use std::cmp;
+
+fn longest_palindrome(v: &Vec<char>) -> Vec<usize> {
+    let n: usize = v.len();
+    let mut f: Vec<Vec<bool>> = vec![vec![false; n]; n];
+    let mut l: Vec<usize> = vec![1; n];
+    
+    for j in 0..n {
+        f[j][j] = true;
+        for i in (0..j).rev() {
+            if v[i] == v[j] {
+                if i + 1 < j {
+                    f[i][j] = f[i + 1][j - 1];
+                } else {
+                    f[i][j] = true;
+                }
+            }
+            
+            if f[i][j] {
+                l[i] = cmp::max(l[i], j - i + 1);
+            }
+        }
+    }
+    
+    return l
+}
+
+fn main() {
+    let s: String = "b".to_string();
+    let t: String = "aaaa".to_string();
+    
+    let mut w: Vec<char> = s.chars().collect();
+    let m: usize = w.len();
+    let mut v: Vec<char> = t.chars().collect();
+    let n: usize = v.len();
+    v = v.into_iter().rev().collect();
+    
+    let x: Vec<usize> = longest_palindrome(&w);
+    let y: Vec<usize> = longest_palindrome(&v);
+
+    let mut dp: Vec<Vec<usize>>= vec![vec![0; n]; m];
+    let mut max_length: usize = 0;
+    max_length = cmp::max(*x.iter().max().unwrap(), *y.iter().max().unwrap());
+    
+    for i in (0..m).rev() {
+        for j in (0..n).rev() {
+            if w[i] == v[j] {
+                if i == m - 1 {
+                    if j == n - 1 {
+                        dp[i][j] = 2;
+                    } else {
+                        dp[i][j] = 2 + y[j + 1];
+                    }
+                } else {
+                    if j == n - 1 {
+                        dp[i][j] = 2 + x[i + 1];
+                    } else {
+                        dp[i][j] = 2 + cmp::max(dp[i + 1][j + 1], cmp::max(x[i + 1], y[j + 1]));
+                    }
+                }
+            }
+            max_length = cmp::max(max_length, dp[i][j]);
+        }
+    }
+    
+    println!("{:?}", max_length)
+    
+}
+
+
 //Leetcode 3519
 use std::cmp;
 use std::collections::VecDeque;
