@@ -1,3 +1,116 @@
+use std::cmp;
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
+    //Sum corresponding node,
+    sum: i64,
+    
+    //Keep count value for range updates:
+    count: i64, 
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+
+impl Node {
+    fn new(range: (usize, usize), sum: i64) -> Node {
+         return Node {range: range, sum: sum, count: 0, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i64>, range: (usize, usize)) -> Option<Box<Self>> {
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, arr[range.0]);
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            let left_sum = node.left.as_ref().unwrap().sum;
+            let right_sum = node.right.as_ref().unwrap().sum;
+            node.sum = left_sum + right_sum;
+        }
+        
+        return Some(Box::new(node))
+    }
+    
+    fn push(&mut self) {
+        let left = self.left.as_mut().unwrap();
+        let right = self.right.as_mut().unwrap();
+        left.count += self.count;
+        right.count += self.count;
+        self.count = 0;
+    }
+    
+    fn query(&mut self, range: (usize, usize)) -> i64 {
+        if  range.0 > range.1 {
+            return 0
+        }
+        
+        if  self.range.0 == range.0 && self.range.1 == range.1 {
+            if self.count % 2 == 1 {
+                return (self.range.1 - self.range.0 + 1) as i64 - self.sum;
+            } else {
+                return self.sum
+            }
+        }
+        
+        self.push();
+        
+        let mut sum = 0;
+        
+        if let Some(ref mut left) = self.left {
+            let left_query = left.query((range.0, cmp::min(range.1, left.range.1)));
+            sum += left_query;
+        }
+        
+        
+        if let Some(ref mut right) = self.right {
+            let right_query = right.query((cmp::max(range.0, right.range.1), range.1));
+            sum += right_query;
+        }
+        
+       return sum
+    }
+    
+    fn update(&mut self, range: (usize, usize)) {
+        if range.0 > range.1 {
+            return 
+        }
+        
+         if self.range.0 == range.0 && self.range.1 == range.1 {
+            self.count += 1;
+            if self.count % 2 == 1 {
+                self.sum = (range.1 - range.0 + 1) as i64 - self.sum;
+                if let Some(ref left) = self.left {
+                    self.push();
+                } else {
+                    self.count = 0;
+                }
+            }
+        } else {
+            self.push();
+            let mid = (self.range.0 + self.range.1)/2;
+            self.left.as_mut().unwrap().update((range.0, cmp::min(mid, range.1)));
+            self.right.as_mut().unwrap().update((cmp::max(range.0, mid + 1), range.1));
+            let left_sum = self.left.as_ref().unwrap().sum;
+            let right_sum = self.right.as_ref().unwrap().sum;
+            self.sum = left_sum + right_sum;
+        }
+    }
+}
+
+
 //Leetcode 3165
 use std::cmp;
 
