@@ -1,3 +1,146 @@
+//Leetcode 3161
+
+use std::cmp;
+use std::collections::BTreeSet;
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
+    //Maximum corresponding value,
+    max_value: i64,
+    
+    //Keep lazy value for range updates:
+    lazy: i64, 
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+
+impl Node {
+    fn new(range: (usize, usize), max_value: i64) -> Node {
+         return Node {range: range, max_value: max_value, lazy: 0, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i64>, range: (usize, usize)) -> Option<Box<Self>> {
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, arr[range.0]);
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            let left_max = node.left.as_ref().unwrap().max_value;
+            let right_max = node.right.as_ref().unwrap().max_value;
+            node.max_value = cmp::max(left_max, right_max);
+        }
+        
+        return Some(Box::new(node))
+    }
+    
+    fn push(&mut self) {
+        let left = self.left.as_mut().unwrap();
+        let right = self.right.as_mut().unwrap();
+        left.max_value += self.lazy;
+        left.lazy += self.lazy;
+        right.max_value += self.lazy;
+        right.lazy += self.lazy;
+        self.lazy = 0;
+    }
+    
+    fn query(&mut self, range: (usize, usize)) -> i64 {
+        if  range.0 > range.1 {
+            return i64::MIN
+        }
+        
+        if  self.range.0 == range.0 && self.range.1 == range.1 {
+            return self.max_value
+        }
+        
+        self.push();
+        
+        let mut max_value = i64::MIN;
+
+        if let Some(ref mut left) = self.left {
+            let left_query = left.query((range.0, cmp::min(range.1, left.range.1))); 
+            max_value = cmp::max(max_value, left_query)
+        }
+        
+        
+        if let Some(ref mut right) = self.right {
+            let right_query = right.query((cmp::max(range.0, right.range.0), range.1));
+            max_value = cmp::max(max_value, right_query)
+        }
+        
+       return max_value
+    }
+    
+    fn update(&mut self, range: (usize, usize), add: i64) {
+        if range.0 > range.1 {
+            return 
+        }
+        
+         if self.range.0 == range.0 && self.range.1 == range.1 {
+            self.max_value += add;
+            self.lazy += add;
+        } else {
+            self.push();
+            let mid = (self.range.0 + self.range.1)/2;
+            self.left.as_mut().unwrap().update((range.0, cmp::min(mid, range.1)), add);
+            self.right.as_mut().unwrap().update((cmp::max(range.0, mid + 1), range.1), add);
+            let left_max = self.left.as_ref().unwrap().max_value;
+            let right_max = self.right.as_ref().unwrap().max_value;
+            self.max_value = cmp::max(left_max, right_max);
+        }
+    }
+}
+
+
+
+fn main() {
+    let n: usize = 8;
+    let mut v: Vec<i64> = vec![0; n + 1];
+    for i in 0..=n {
+        v[i] = i as i64;
+    }
+    
+    let mut tree = Node::build(&v, (0, n)).unwrap();
+    
+    let mut map: BTreeSet<i32> = BTreeSet::new();
+    map.insert(0_i32);
+    map.insert(n as i32);
+    
+    let queries: Vec<Vec<i32>> = vec![vec![1,7], vec![2,7,6], vec![1,2], vec![2,7,5], vec![2,7,6]];
+    let m = queries.len();
+    let mut res: Vec<bool> = Vec::new();
+    
+    for i in 0..m {
+        if queries[i][0] == 1 {
+            let update = queries[i][1];
+            let prev = *map.range(..update + 1).next_back().unwrap();
+            let next = *map.range(update..).next().unwrap();
+            tree.update((update as usize + 1, next as usize), (prev - update) as i64);
+            map.insert(update);
+        } else {
+            let range =  queries[i][1] as usize;
+            let max = tree.query((0, range));
+            res.push(max >= queries[i][2] as i64);
+        }
+    }
+    
+    
+    println!("{:?}", res)
+   
+
 use std::cmp;
 
 #[derive(Debug)]
