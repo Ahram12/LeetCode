@@ -1,3 +1,157 @@
+//Leetcode 3072
+use std::collections::HashMap;
+
+use std::cmp;
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
+    //Count of corresponding peaks,
+    sum: i64,
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+impl Node {
+    fn new(range: (usize, usize), sum: i64) -> Node {
+         return Node {range: range, sum: sum, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i64>, range: (usize, usize)) -> Option<Box<Self>> {
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, arr[range.0]);
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            let left_sum = node.left.as_ref().unwrap().sum;
+            let right_sum = node.right.as_ref().unwrap().sum;
+            node.sum = left_sum + right_sum;
+        }
+        
+        return Some(Box::new(node))
+    }
+    
+    fn query(&mut self, range: (usize, usize)) -> i64 {
+        if  range.0 > range.1 {
+            return 0
+        }
+        
+        if  self.range.0 == range.0 && self.range.1 == range.1 {
+            return self.sum
+        }
+        
+        let mut sum = 0;
+
+        if let Some(ref mut left) = self.left {
+            sum += left.query((range.0, cmp::min(range.1, left.range.1))); 
+        }
+        
+        
+        if let Some(ref mut right) = self.right {
+            sum += right.query((cmp::max(range.0, right.range.0), range.1));
+        }
+        
+      return sum
+    }
+    
+    fn update(&mut self, index: usize, value: i64) {
+         if self.range.0 == index && self.range.1 == index {
+            self.sum = value;
+        } else {
+            let mid = (self.range.0 + self.range.1)/2;
+            if index <= mid {
+                self.left.as_mut().unwrap().update(index, value);
+            } else {
+                self.right.as_mut().unwrap().update(index, value);
+            }
+            let left_sum = self.left.as_ref().unwrap().sum;
+            let right_sum = self.right.as_ref().unwrap().sum;
+            self.sum = left_sum + right_sum;
+        }
+    }
+}
+
+fn main() {
+    let nums: Vec<i32> = vec![2, 2, 2, 2, 3, 3, 3];
+    let mut temp: Vec<i32> = nums.clone();
+    let size = nums.len();
+    temp.sort_unstable();
+
+    let mut i: usize = 0;
+    let mut j: usize = 0;
+    let mut count: i32 = 0;
+    let mut count_map: HashMap<i32, i32> = HashMap::new();
+    
+    while j < size {
+        count_map.insert(temp[i], count);
+        while j < size && temp[i] == temp[j] {
+            j += 1;
+        }
+        count += 1;
+        i = j;
+    }
+    
+    i = 2;
+    let mut left: Vec<i32> = vec![nums[0]];
+    let mut left_prefix: Vec<i64> = vec![0; count as usize + 1];
+    let mut index: usize = *count_map.get(&nums[0]).unwrap() as usize;
+    left_prefix[index] += 1;
+    let mut left_tree = Node::build(&left_prefix, (0, count as usize)).unwrap();
+    
+    let mut right: Vec<i32> = vec![nums[1]];
+    let mut right_prefix: Vec<i64> = vec![0; count as usize + 1];
+    index = *count_map.get(&nums[1]).unwrap() as usize;
+    right_prefix[index] += 1;
+    let mut right_tree = Node::build(&right_prefix, (0, count as usize)).unwrap();
+    
+    while i < size {
+        index = *count_map.get(&nums[i]).unwrap() as usize;
+        let left_sum = left_tree.query((index + 1, count as usize));
+        let right_sum = right_tree.query((index + 1, count as usize));
+        
+        if left_sum > right_sum {
+            left.push(nums[i]);
+            left_prefix[index] += 1;
+            left_tree.update(index, left_prefix[index]);
+        } else if left_sum < right_sum {
+            right.push(nums[i]);
+            right_prefix[index] += 1;
+            right_tree.update(index, right_prefix[index]);
+        } else {
+            let m = left.len();
+            let n = right.len();
+            
+            if m <= n {
+                left.push(nums[i]);
+                left_prefix[index] += 1;
+                left_tree.update(index, left_prefix[index]);
+            } else {
+                right.push(nums[i]);
+                right_prefix[index] += 1;
+                right_tree.update(index, right_prefix[index]);
+            }
+        }
+        
+        i += 1;
+    }
+    
+    //{16: 3, 17: 4, 98: 7, 14: 1, 99: 8, 100: 9, 15: 2, 12: 0, 56: 5, 97: 6}
+    println!("{:?}, {:?}", left, right)
+}
+
+
 //Leetcode 3161
 
 use std::cmp;
