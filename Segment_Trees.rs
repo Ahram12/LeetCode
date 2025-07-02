@@ -1,7 +1,6 @@
 //Leetcode 3072
-use std::collections::HashMap;
-
 use std::cmp;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 struct Node {
