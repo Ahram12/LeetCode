@@ -1,3 +1,97 @@
+use std::cmp;
+
+fn gcd(a: &i64, b: &i64) -> i64 {
+    let mut p: i64 = cmp::min(*a, *b);
+    let mut q: i64 = cmp::max(*a, *b);
+    
+    if p == 0 {
+        return q
+    }
+    
+    loop {
+        if q % p == 0 {
+            return p
+        } else {
+            let temp = p;
+            q %= p;
+            p = q;
+            q = temp;
+        }
+    }
+}
+
+
+#[derive(Debug)]
+struct Node {
+    //Range of array represented by node
+    range: (usize, usize),
+    
+    //Corresponding gcd of each node,
+    gcd: i64,
+    
+    //Left child node
+    left: Option<Box<Node>>,
+    
+    //Right child node
+    right: Option<Box<Node>>
+}
+
+impl Node {
+    fn new(range: (usize, usize), gcd: i64) -> Node {
+         return Node {range: range, gcd: gcd, left: None, right: None }
+    }
+    
+    fn build(arr: &Vec<i64>, range: (usize, usize)) -> Option<Box<Self>> {
+        if range.0 > range.1 {
+            return None;
+        }
+        
+        let mid = (range.0 + range.1) / 2;
+        
+        let mut node = Node::new(range, arr[range.0]);
+        
+        if range.0 < range.1 {
+            node.left = Self::build(arr, (range.0, mid));
+            node.right = Self::build(arr, (mid + 1, range.1));
+            let left_gcd = node.left.as_ref().unwrap().gcd;
+            let right_gcd = node.right.as_ref().unwrap().gcd;
+            node.gcd = gcd(&left_gcd, &right_gcd);
+        }
+        
+        return Some(Box::new(node))
+    }
+    
+    fn query(&self, range: (usize, usize)) -> i64 {
+        if  range.0 > range.1 {
+            return 0
+        }
+        
+        if  self.range.0 == range.0 && self.range.1 == range.1 {
+            return self.gcd
+        }
+        
+        let mut d = 0;
+
+        if let Some(ref left) = self.left {
+            d = gcd(&d, &left.query((range.0, cmp::min(range.1, left.range.1)))); 
+        }
+        
+        
+        if let Some(ref right) = self.right {
+            d = gcd(&d, &right.query((cmp::max(range.0, right.range.0), range.1)));
+        }
+        
+      return d
+    }
+
+}
+
+fn main() {
+    let arr: Vec<i64> = vec![12, 344, 68, 64, 32];
+    let tree = Node::build(&arr, (0, arr.len() - 1)).unwrap(); 
+    println!("{:?}", tree.query((1, 4)));
+}
+
 //Leetcode 3072
 use std::cmp;
 use std::collections::HashMap;
@@ -7,7 +101,7 @@ struct Node {
     //Range of array represented by node
     range: (usize, usize),
     
-    //Count of corresponding peaks,
+    //Sum of corresponding nodes,
     sum: i64,
     
     //Left child node
@@ -42,7 +136,7 @@ impl Node {
         return Some(Box::new(node))
     }
     
-    fn query(&mut self, range: (usize, usize)) -> i64 {
+    fn query(&self, range: (usize, usize)) -> i64 {
         if  range.0 > range.1 {
             return 0
         }
@@ -53,12 +147,12 @@ impl Node {
         
         let mut sum = 0;
 
-        if let Some(ref mut left) = self.left {
+        if let Some(ref left) = self.left {
             sum += left.query((range.0, cmp::min(range.1, left.range.1))); 
         }
         
         
-        if let Some(ref mut right) = self.right {
+        if let Some(ref right) = self.right {
             sum += right.query((cmp::max(range.0, right.range.0), range.1));
         }
         
