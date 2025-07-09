@@ -70,7 +70,7 @@ impl Node {
             return self.gcd
         }
         
-        let mut d = 0;
+        let mut d: i64 = 0;
 
         if let Some(ref left) = self.left {
             d = gcd(&d, &left.query((range.0, cmp::min(range.1, left.range.1)))); 
