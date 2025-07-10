@@ -1,3 +1,5 @@
+//Leetcode 3605
+
 use std::cmp;
 
 fn gcd(a: &i64, b: &i64) -> i64 {
@@ -70,11 +72,12 @@ impl Node {
             return self.gcd
         }
         
-        let mut d: i64 = 0;
+        let mut d = 0;
 
         if let Some(ref left) = self.left {
             d = gcd(&d, &left.query((range.0, cmp::min(range.1, left.range.1)))); 
         }
+        
         
         if let Some(ref right) = self.right {
             d = gcd(&d, &right.query((cmp::max(range.0, right.range.0), range.1)));
@@ -86,9 +89,46 @@ impl Node {
 }
 
 fn main() {
-    let arr: Vec<i64> = vec![12, 344, 68, 64, 32];
-    let tree = Node::build(&arr, (0, arr.len() - 1)).unwrap(); 
-    println!("{:?}", tree.query((1, 4)));
+    let arr: Vec<i64> = vec![2, 4, 9, 6];
+    let size = arr.len();
+    let max_c: usize = 1;
+    let tree = Node::build(&arr, (0, size - 1)).unwrap(); 
+    
+    let mut low: usize = 2;
+    let mut high: usize = size;
+    let mut max_len: usize = size;
+    
+    while low <= high {
+        let mid = (low + high)/2;
+        let mut temp_c: usize = max_c;
+        let mut j: usize = mid - 1;
+        let mut flag: bool = true;
+        
+        while j < size {
+            if tree.query((j + 1 - mid, j)) == 1 {
+                j += 1;
+            } else {
+                if temp_c > 0 {
+                    temp_c -= 1;
+                    j += mid;
+                } else {
+                    flag = false;
+                    break
+                }
+            }
+        }
+        
+        if flag {
+            max_len = mid;
+            high = mid - 1;
+        } else {
+            low = mid + 1;
+        }
+        
+    }
+    
+    
+    println!("{:?}", max_len - 1);
 }
 
 //Leetcode 3072
