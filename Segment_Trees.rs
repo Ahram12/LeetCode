@@ -76,7 +76,6 @@ impl Node {
             d = gcd(&d, &left.query((range.0, cmp::min(range.1, left.range.1)))); 
         }
         
-        
         if let Some(ref right) = self.right {
             d = gcd(&d, &right.query((cmp::max(range.0, right.range.0), range.1)));
         }
