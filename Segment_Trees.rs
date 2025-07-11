@@ -96,7 +96,7 @@ fn main() {
     
     let mut low: usize = 2;
     let mut high: usize = size;
-    let mut max_len: usize = size;
+    let mut max_len: usize = size + 1;
     
     while low <= high {
         let mid = (low + high)/2;
