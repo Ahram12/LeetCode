@@ -1,3 +1,105 @@
+//Leetcode 3145
+use std::cmp;
+
+fn main() {
+    
+    let mut f: Vec<i128> = Vec::new();
+    let mut j: usize = 0;
+    const MAX: i128 = 10_i128.pow(17);
+    let mut curr: i128 = 0;
+    
+    let len: usize = 100;
+    let mut t: Vec<i128> = vec![1; len];
+    for i in 1..len {
+        t[i] = 2*t[i - 1]; 
+    }
+    
+    while curr < MAX {
+        curr = t[j]*(j as i128 + 1);
+        if curr < MAX {
+            f.push(curr);
+        }
+        j += 1;
+    }
+    
+    
+    let mut n: i128 = 10_i128.pow(15) + 1;
+    let mut s: i128 = 0;
+    let m = f.len();
+    let mut base: Vec<usize> = Vec::new();
+    
+    while n > 0 {
+        j = 0;
+        let mut temp_val = n;
+        while j < m && f[j] + s*(t[j + 1] - 1) <= n {
+            temp_val = n - (f[j] + s*(t[j + 1] - 1));
+            j += 1;
+        }
+        //n = temp_val;
+      // println!("{:?}", temp_val);
+        if temp_val == 0 {
+            for i in (0..j).rev() {
+                base.push(i);
+                s += 1;
+            }
+            n = s;
+            break
+        } else {
+            base.push(j);
+            s += 1;
+            n = temp_val;
+            if n > s {
+                n -= s;
+            } else {
+                break
+            }
+        }
+    }
+    
+    
+    
+    //let res = base[base.len() - n as usize];
+    
+    println!("{:?}", (base, n))
+    
+}
+
+fn main() {
+    
+    let num: usize = 10_usize.pow(14);
+    let mut binary: Vec<usize> = Vec::new();
+    
+    for i in (0..=51).rev() {
+        if (1<<i) & num != 0 {
+            binary.push(i);
+        }
+    }
+    
+    let mut res: usize = (num - (1<<(binary[0])) + 1)*binary[0];
+    let n: usize = binary.len();
+    
+    for i in (1..binary[0]).rev() {
+        let mut remainder = num - (1<<(binary[0]));
+        res += (binary[0] - i)*(1<<i)*i;
+        let mut j: usize = 1;
+        while j < n {
+            remainder -= 1<<binary[j];
+            if i < binary[j] {
+                res += (binary[j] - i)*(1<<i)*i;
+            } else if i == binary[j] {
+                res += (remainder + 1)*i;
+            } else {
+                break
+            }
+            j += 1;
+        }
+    }
+
+//[1, 4, 12, 32, 80, 192, 448]
+
+    println!("{:?}", res)
+}
+
 //Leetcode 3504
 
 use std::cmp;
