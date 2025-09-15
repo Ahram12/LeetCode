@@ -1,42 +1,38 @@
 //Leetcode 3145
-use std::cmp;
+fn exponent(mut power: i128, modulus: i128) -> i32 {
+    if modulus == 1 {
+        return 0
+    }
+    let mut res: i128 = 1;
+    let mut base: i128 = 2;
+    
+    while power > 0 {
+        if power & 1 != 0 {
+            res *= base;
+            res %= modulus;
+        } 
+        
+        power >>= 1;
+        base *= base;
+        base %= modulus;
+    }
+    
+    return res as i32
+}
 
-fn main() {
-    
-    let mut f: Vec<i128> = Vec::new();
-    let mut j: usize = 0;
-    const MAX: i128 = 10_i128.pow(17);
-    let mut curr: i128 = 0;
-    
-    let len: usize = 100;
-    let mut t: Vec<i128> = vec![1; len];
-    for i in 1..len {
-        t[i] = 2*t[i - 1]; 
-    }
-    
-    while curr < MAX {
-        curr = t[j]*(j as i128 + 1);
-        if curr < MAX {
-            f.push(curr);
-        }
-        j += 1;
-    }
-    
-    
-    let mut n: i128 = 10_i128.pow(15) + 1;
+fn compute_binary(f: &Vec<i128>, t: &Vec<i128>, n: &i128) -> (usize, i128) {
+    let mut n: i128 = *n;
     let mut s: i128 = 0;
     let m = f.len();
     let mut base: Vec<usize> = Vec::new();
     
     while n > 0 {
-        j = 0;
+        let mut j: usize = 0;
         let mut temp_val = n;
         while j < m && f[j] + s*(t[j + 1] - 1) <= n {
             temp_val = n - (f[j] + s*(t[j + 1] - 1));
             j += 1;
         }
-        //n = temp_val;
-      // println!("{:?}", temp_val);
         if temp_val == 0 {
             for i in (0..j).rev() {
                 base.push(i);
@@ -56,36 +52,45 @@ fn main() {
         }
     }
     
+    let mut res: i128 = 0;
+    let mut count: usize = 0;
+    let mut num_digits: usize = 0;
+    for i in (0..base.len()).rev() {
+        res += t[base[i]];
+        if count < n as usize {
+            num_digits += base[i];
+            count += 1;
+        }
+    }
     
-    
-    //let res = base[base.len() - n as usize];
-    
-    println!("{:?}", (base, n))
+    return (num_digits, res)
     
 }
 
-fn main() {
-    
-    let num: usize = 10_usize.pow(14);
+fn compute_digits(n: &usize) -> usize {
+    let n: usize = *n;
+    if n == 0 {
+        return 0
+    }
     let mut binary: Vec<usize> = Vec::new();
     
     for i in (0..=51).rev() {
-        if (1<<i) & num != 0 {
+        if (1<<i) & n != 0 {
             binary.push(i);
         }
     }
     
-    let mut res: usize = (num - (1<<(binary[0])) + 1)*binary[0];
-    let n: usize = binary.len();
+    let mut res: usize = (n - (1<<(binary[0])) + 1)*binary[0];
+    let size: usize = binary.len();
     
     for i in (1..binary[0]).rev() {
-        let mut remainder = num - (1<<(binary[0]));
-        res += (binary[0] - i)*(1<<i)*i;
+        let mut remainder = n - (1<<(binary[0]));
+        res += (1<<(binary[0] - 1))*i;
         let mut j: usize = 1;
-        while j < n {
+        while j < size {
             remainder -= 1<<binary[j];
             if i < binary[j] {
-                res += (binary[j] - i)*(1<<i)*i;
+                res += (1<<(binary[j] - 1))*i;
             } else if i == binary[j] {
                 res += (remainder + 1)*i;
             } else {
@@ -94,10 +99,58 @@ fn main() {
             j += 1;
         }
     }
+    
+    return res
+}
 
-//[1, 4, 12, 32, 80, 192, 448]
+fn find_products_of_elements(queries: Vec<Vec<i64>>) -> Vec<i32> {
+    let mut f: Vec<i128> = Vec::new();
+    let mut j: usize = 0;
+    const MAX: i128 = 10_i128.pow(17);
+    let mut curr: i128 = 0;
+        
+    let len: usize = 100;
+    let mut t: Vec<i128> = vec![1; len];
+    for i in 1..len {
+        t[i] = 2*t[i - 1]; 
+    }
+        
+    while curr < MAX {
+        curr = t[j]*(j as i128 + 1);
+        if curr < MAX {
+            f.push(curr);
+        }
+        j += 1;
+    }
+        
+    let q: usize = queries.len();
+    let mut res: Vec<i32> = vec![0; q];
 
-    println!("{:?}", res)
+    for i in 0..q {
+        let l: i128 = queries[i][0] as i128;
+        let r: i128 = queries[i][1] as i128;
+        let modulus: i128 = queries[i][2] as i128;
+
+        if l > 0 {
+            let (num_digits_l, res_l) = compute_binary(&f, &t, &l);
+            let (num_digits_r, res_r) = compute_binary(&f, &t, &(r + 1));
+
+            let mut count: usize = compute_digits(&(res_r as usize - 1))- compute_digits(&(res_l as usize - 1));
+            count +=  num_digits_r;
+            count -= num_digits_l;
+
+            res[i] = exponent((count as i128), modulus);
+        } else if r > 0 {
+            let (num_digits_r, res_r) = compute_binary(&f, &t, &(r + 1));
+            let mut count: usize = compute_digits(&(res_r as usize - 1));
+            count +=  num_digits_r;
+            res[i] = exponent((count as i128), modulus);
+        } else {
+            res[i] = (1 % modulus) as i32
+        }
+    }
+
+    return res
 }
 
 //Leetcode 3504
