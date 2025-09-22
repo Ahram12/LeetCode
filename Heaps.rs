@@ -1,3 +1,169 @@
+//Leetcode 3691
+use std::cmp;
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+struct Element {
+    start: usize,
+    end: usize,
+    value: usize,
+}
+
+impl Ord for Element {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.value.cmp(&other.value)
+            .then_with(|| self.end.cmp(&other.end))
+    }
+}
+
+impl PartialOrd for Element {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn main() {
+    let mut nums: Vec<i32> = Vec::new();
+    let len: i32 = 50_000_i32;
+    for i in 0..len {
+        nums.push(i);
+    }
+    let k: usize = 2;
+    let size = nums.len();
+    let mut max_range: Vec<Vec<usize>> = vec![vec![0, 0]; size];
+    let mut min_range: Vec<Vec<usize>> = vec![vec![0, 0]; size];
+    let mut max_stk_front: Vec<usize> = Vec::new();
+    let mut max_stk_back: Vec<usize> = Vec::new();
+    let mut min_stk_front: Vec<usize> = Vec::new();
+    let mut min_stk_back: Vec<usize> = Vec::new();
+    let mut zip: Vec<Vec<usize>> = vec![vec![0, 0]; size];
+    
+    for i in 0..size {
+        zip[i][0] = nums[i] as usize;
+        zip[i][1] = i;
+        
+        while !max_stk_front.is_empty() && nums[max_stk_front[max_stk_front.len() - 1]] <= nums[i] {
+            max_stk_front.pop();
+        }
+        if max_stk_front.is_empty() {
+            max_range[i][0] = 0;
+        } else {
+            max_range[i][0] = max_stk_front[max_stk_front.len() - 1] + 1;
+        }
+        max_stk_front.push(i);
+        
+        while !min_stk_front.is_empty() && nums[min_stk_front[min_stk_front.len() - 1]] >= nums[i] {
+            min_stk_front.pop();
+        }
+        if min_stk_front.is_empty() {
+            min_range[i][0] = 0;
+        } else {
+            min_range[i][0] = min_stk_front[min_stk_front.len() - 1] + 1;
+        }
+        min_stk_front.push(i);
+        
+        while !max_stk_back.is_empty() && nums[max_stk_back[max_stk_back.len() - 1]] < nums[size - 1 - i] {
+            max_stk_back.pop();
+        }
+        if max_stk_back.is_empty() {
+            max_range[size - 1 - i][1] = size - 1;
+        } else {
+            max_range[size - 1 - i][1] = max_stk_back[max_stk_back.len() - 1] - 1;
+        }
+        max_stk_back.push(size - 1 - i);
+        
+        while !min_stk_back.is_empty() && nums[min_stk_back[min_stk_back.len() - 1]] > nums[size - 1 - i] {
+            min_stk_back.pop();
+        }
+        if min_stk_back.is_empty() {
+            min_range[size - 1 - i][1] = size - 1;
+        } else {
+            min_range[size - 1 - i][1] = min_stk_back[min_stk_back.len() - 1] - 1;
+        }
+        min_stk_back.push(size - 1 - i);
+    }
+    
+    zip.sort_by_key(|v| (v[0], v[1]));
+    
+    let mut num_arrs: usize = 0;
+    let mut j: usize = size - 1;
+    let mut i = 0;
+    let mut pq: BinaryHeap<Element> = BinaryHeap::new();
+    let mut next: i32 = size as i32 - 2;
+    let mut distances: usize = 0;
+
+    while num_arrs < k {
+        if j < i {
+            if pq.is_empty() {
+                if next < 0 {
+                    break
+                } else {
+                    i = 0;
+                    j = next as usize;
+                    next -= 1;
+                }
+            } else {
+                let prev: Element = pq.pop().unwrap();
+                i = prev.start;
+                j = prev.end;
+            }
+        }
+        
+        let mut curr_dist = zip[j][0] - zip[i][0];
+        
+        if !pq.is_empty() && curr_dist < pq.peek().unwrap().value {
+            pq.push(Element{start: i, end: j, value: curr_dist});
+            if next > -1 && pq.peek().unwrap().value < zip[next as usize][0] - zip[0][0] {
+                i = 0;
+                j = next as usize;
+                next -= 1;
+            } else {
+                let prev: Element = pq.pop().unwrap();
+                i = prev.start;
+                j = prev.end;
+            }
+        } else {
+            if next > - 1 && curr_dist < zip[next as usize][0] - zip[0][0] {
+                pq.push(Element{start: i, end: j, value: curr_dist});
+                i = 0;
+                j = next as usize;
+                next -= 1;
+            }
+        }
+
+        curr_dist = zip[j][0] - zip[i][0];
+        let min: usize = zip[i][1];
+        let min_lower = min_range[min][0];
+        let min_upper = min_range[min][1];
+        
+        let max: usize = zip[j][1];
+        let max_lower = max_range[max][0];
+        let max_upper = max_range[max][1];
+        
+        if (max >= min_lower && max <= min_upper) && (min >= max_lower && min <= max_upper) {
+            let lower = cmp::max(min_lower, max_lower);
+            let upper = cmp::min(min_upper, max_upper);
+            let left = cmp::min(min, max);
+            let right = cmp::max(min, max);
+            let new_sets = (left - lower + 1)*(upper - right + 1);
+            
+            if num_arrs + new_sets >= k {
+                distances += curr_dist * (k - num_arrs);
+                num_arrs = k;
+            } else {
+                distances += curr_dist*new_sets;
+                num_arrs += new_sets;
+                
+            }
+        } 
+        i += 1;
+    }
+        
+    
+    println!("{:?}",distances);
+}
+
 //Leetcode 857
 use std::collections::BinaryHeap;
 
