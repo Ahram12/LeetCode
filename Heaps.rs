@@ -209,7 +209,7 @@ fn main() {
         nums[i] = *hash.get(&nums[i]).unwrap();
     }
     
-    let mut balance: Balance = Balance{left: BinaryHeap::new(), right: BinaryHeap::new(), set: vec![0; 3], len: 0, sum: 0};
+    let mut balance: Balance = Balance{left: BinaryHeap::new(), right: BinaryHeap::new(), set: vec![0; size], len: 0, sum: 0};
     let mut counts: Vec<i64> = vec![0; size];
     let mut res: Vec<i64> = Vec::new();
     for i in 0..size {
