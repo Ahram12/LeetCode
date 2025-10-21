@@ -1,3 +1,198 @@
+//Leetcode 3321
+use std::cmp;
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+struct Element {
+    count: i64,
+    value: i64,
+}
+
+impl Ord for Element {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.count.cmp(&other.count)
+            .then_with(|| self.value.cmp(&other.value))
+    }
+}
+
+impl PartialOrd for Element {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Debug)]
+struct Balance {
+    left: BinaryHeap<Element>,
+    right: BinaryHeap<Element>,
+    set: Vec<i32>,
+    len: i32,
+    sum: i64,
+}
+
+impl Balance {
+    fn add(&mut self, val: &i64, count: &i64, map: &Vec<i64>, x: &i32) {
+        let set_val = self.set[*val as usize];
+        if set_val == 0 {
+            if self.len < *x {
+                self.left.push(Element{count: -1**count, value: -1*val});
+                self.len += 1;
+                self.sum += map[*val as usize];
+                self.set[*val as usize] = 1;
+            } else {
+                let top_count = -self.left.peek().unwrap().count;
+                let top_value = -self.left.peek().unwrap().value;
+                
+                if top_count == *count && top_value < *val {
+                    self.left.push(Element{count: -1**count, value: -1*val});
+                    self.set[*val as usize] = 1;
+                    self.sum += map[*val as usize];
+                        
+                    self.left.pop();
+                    self.right.push(Element{count: top_count, value: top_value});
+                    self.set[top_value as usize] = -1;
+                    self.sum -= map[top_value as usize];
+                } else {
+                    self.right.push(Element{count: *count, value: *val});
+                    self.set[*val as usize] = -1;
+                }   
+            }
+        } else if set_val == 1 {
+            let top_value = -self.left.peek().unwrap().value;
+            
+            if top_value == *val {
+                self.left.pop();
+                self.left.push(Element{count: -1**count, value: -1*val});
+            }
+        } else {
+            let top_count = self.right.peek().unwrap().count;
+            let top_value = self.right.peek().unwrap().value;
+            
+            if top_value == *val {
+                self.right.pop();
+                self.right.push(Element{count: top_count, value: top_value});
+            } else {
+                let a : bool = *count > top_count;
+                let b: bool = (*count == top_count) && (*val > top_value);
+                
+                if a || b {
+                    self.right.push(Element{count: top_count, value: top_value});
+                }
+            }
+        }
+    }
+    
+    // fn subtract(&mut self, val: &i64, count: &i32, map: &Vec<i64>, x: &i32) {
+    //     let set_val = self.set[*val as usize];
+    //     if set_val == 1 {
+    //         let top_count = -self.left.peek().unwrap().count;
+    //         let top_value = -self.left.peek().unwrap().value;
+             
+    //         if top_value == *val {
+    //             self.left.pop();
+    //             self.left.push(Element{count: -1**count, value: -1*val});
+    //         } else {
+    //             let a: bool = *count < top_count;
+    //             let b: bool = (*count == top_count) && (*val < top_value);
+                
+    //             if a || b {
+    //                 self.left.push(Element{count: -1**count, value: -1*val});
+    //             }
+    //          }
+    //     } else {
+    //         let top_value = self.right.peek().unwrap().value; 
+            
+    //         if top_value == *val {
+    //             self.right.pop();
+    //             self.right.push(Element{count: top_count, value: top_value});
+    //         }
+    //     }
+    // }
+    
+    // fn rebalance(&mut self, count: &Vec<i32>, map: &Vec<i32>, x: &i32) {
+    //     loop {
+    //         if self.len == 0 {
+    //             break
+    //         }
+            
+    //         loop {
+    //             let top_left_count = -self.left.peek().unwrap().count;
+    //             let top_left_value = -self.left.peek().unwrap().value;
+                
+    //             if top_left_count != count[*top_left_value as usize] {
+    //                 self.left.pop();
+    //                 self.left.push(Element{count: -count[*top_left_value as usize], value: -top_left_value});
+    //             } else {
+    //                 break
+    //             }
+    //         }
+            
+    //         if self.right.is_empty() {
+    //             break
+    //         }
+            
+    //         loop {
+    //             let top_right_count = self.right.peek().unwrap().count;
+    //             let top_right_value = self.right.peek().unwrap().value;
+                
+    //             if top_right_count != count[*top_right_value as usize] {
+    //                 self.right.pop();
+    //                 self.right.push(Element{count: count[*top_right_value as usize], value: top_right_value});
+    //             } else {
+    //                 break
+    //             }
+    //         }
+            
+    //         if top_right_count == 0 {
+    //             self.set[self.right.peek().unwrap().value as usize] = 0;
+    //             break
+    //         } else {
+    //             let top_right_count = self.right.peek().unwrap().count;
+    //             let top_right_value = self.right.peek().unwrap().value;
+    //             if self.len < *x {
+    //                 self.left.push(Element{count: -top_right_count, value: -top_right_value});
+    //             } else {
+    //                 let top_left_count = -self.left.peek().unwrap().count;
+    //                 let top_left_value = -self.left.peek().unwrap().value;
+                    
+    //                 let a: bool = top_right_count > top_left_count;
+    //                 let b: bool = (top_right_count == top_left_count) && top_right_value > top_left_value;
+                    
+    //                 if a || b {
+    //                     self.left.pop();
+    //                     self.right.pop();
+                        
+    //                     self.left.push(Element{count: -top_right_count, value: -top_right_value});
+    //                     self.right.push(Element{count: top_left_count, value: top_left_value});
+    //                     self.sum -= map[top_left_value as usize];
+    //                     self.set[top_left_value as usize] = -1;
+    //                     self.sum += map[top_right_value as usize];
+    //                     self.set[top_right_value as usize] = 1;
+    //                 } else {
+    //                     break
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+} 
+
+fn main() { 
+    let mut balance: Balance = Balance{left: BinaryHeap::new(), right: BinaryHeap::new(), set: vec![0; 3], len: 0, sum: 0};
+    let nums = vec![0, 1, 2, 1, 2];
+    let map: Vec<i64> = vec![0, 1, 2];
+    let mut count: Vec<i64> = vec![0; 3];
+    let x: i32 = 1;
+    
+    
+    for i in 0..nums.len() {
+        count[nums[i] as usize] += 1;
+        balance.add(&(nums[i] as i64), &count[nums[i] as usize], &map, &x);
+    }
+    println!("{:?}", balance)
+}
+
 //Leetcode 3691
 use std::cmp;
 use std::cmp::Ordering;
