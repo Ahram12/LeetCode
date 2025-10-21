@@ -1,7 +1,7 @@
 //Leetcode 3321
 use std::cmp;
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 struct Element {
@@ -65,6 +65,8 @@ impl Balance {
                 self.left.pop();
                 self.left.push(Element{count: -1**count, value: -1*val});
             }
+            
+            self.sum += map[*val as usize];
         } else {
             let top_count = self.right.peek().unwrap().count;
             let top_value = self.right.peek().unwrap().value;
@@ -83,114 +85,149 @@ impl Balance {
         }
     }
     
-    // fn subtract(&mut self, val: &i64, count: &i32, map: &Vec<i64>, x: &i32) {
-    //     let set_val = self.set[*val as usize];
-    //     if set_val == 1 {
-    //         let top_count = -self.left.peek().unwrap().count;
-    //         let top_value = -self.left.peek().unwrap().value;
+    fn subtract(&mut self, val: &i64, count: &i64, map: &Vec<i64>, x: &i32) {
+        let set_val = self.set[*val as usize];
+        if set_val == 1 {
+            let top_count = -self.left.peek().unwrap().count;
+            let top_value = -self.left.peek().unwrap().value;
              
-    //         if top_value == *val {
-    //             self.left.pop();
-    //             self.left.push(Element{count: -1**count, value: -1*val});
-    //         } else {
-    //             let a: bool = *count < top_count;
-    //             let b: bool = (*count == top_count) && (*val < top_value);
+            if top_value == *val {
+                self.left.pop();
+                self.left.push(Element{count: -1**count, value: -1*val});
+            } else {
+                let a: bool = *count < top_count;
+                let b: bool = (*count == top_count) && (*val < top_value);
                 
-    //             if a || b {
-    //                 self.left.push(Element{count: -1**count, value: -1*val});
-    //             }
-    //          }
-    //     } else {
-    //         let top_value = self.right.peek().unwrap().value; 
+                if a || b {
+                    self.left.push(Element{count: -1**count, value: -1*val});
+                }
+             }
+             self.sum -= map[*val as usize];
+        } else {
+            let top_value = self.right.peek().unwrap().value; 
             
-    //         if top_value == *val {
-    //             self.right.pop();
-    //             self.right.push(Element{count: top_count, value: top_value});
-    //         }
-    //     }
-    // }
+            if top_value == *val {
+                self.right.pop();
+                self.right.push(Element{count: *count, value: top_value});
+            }
+        }
+    }
     
-    // fn rebalance(&mut self, count: &Vec<i32>, map: &Vec<i32>, x: &i32) {
-    //     loop {
-    //         if self.len == 0 {
-    //             break
-    //         }
+    fn rebalance(&mut self, count: &Vec<i64>, map: &Vec<i64>, x: &i32) {
+        loop {
+            if self.len == 0 {
+                break
+            }
             
-    //         loop {
-    //             let top_left_count = -self.left.peek().unwrap().count;
-    //             let top_left_value = -self.left.peek().unwrap().value;
+            loop {
+                let top_left_count = -self.left.peek().unwrap().count;
+                let top_left_value = -self.left.peek().unwrap().value;
                 
-    //             if top_left_count != count[*top_left_value as usize] {
-    //                 self.left.pop();
-    //                 self.left.push(Element{count: -count[*top_left_value as usize], value: -top_left_value});
-    //             } else {
-    //                 break
-    //             }
-    //         }
+                if top_left_count != count[top_left_value as usize] {
+                    self.left.pop();
+                    self.left.push(Element{count: -count[top_left_value as usize], value: -top_left_value});
+                } else {
+                    break
+                }
+            }
             
-    //         if self.right.is_empty() {
-    //             break
-    //         }
+            if self.right.is_empty() {
+                break
+            }
             
-    //         loop {
-    //             let top_right_count = self.right.peek().unwrap().count;
-    //             let top_right_value = self.right.peek().unwrap().value;
+            loop {
+                let top_right_count = self.right.peek().unwrap().count;
+                let top_right_value = self.right.peek().unwrap().value;
                 
-    //             if top_right_count != count[*top_right_value as usize] {
-    //                 self.right.pop();
-    //                 self.right.push(Element{count: count[*top_right_value as usize], value: top_right_value});
-    //             } else {
-    //                 break
-    //             }
-    //         }
+                if top_right_count != count[top_right_value as usize] {
+                    self.right.pop();
+                    self.right.push(Element{count: count[top_right_value as usize], value: top_right_value});
+                } else {
+                    break
+                }
+            }
             
-    //         if top_right_count == 0 {
-    //             self.set[self.right.peek().unwrap().value as usize] = 0;
-    //             break
-    //         } else {
-    //             let top_right_count = self.right.peek().unwrap().count;
-    //             let top_right_value = self.right.peek().unwrap().value;
-    //             if self.len < *x {
-    //                 self.left.push(Element{count: -top_right_count, value: -top_right_value});
-    //             } else {
-    //                 let top_left_count = -self.left.peek().unwrap().count;
-    //                 let top_left_value = -self.left.peek().unwrap().value;
+            let top_right_count = self.right.peek().unwrap().count;
+            
+            if top_right_count == 0 {
+                self.set[self.right.peek().unwrap().value as usize] = 0;
+                break
+            } else {
+                let top_right_value = self.right.peek().unwrap().value;
+                if self.len < *x {
+                    self.left.push(Element{count: -top_right_count, value: -top_right_value});
+                } else {
+                    let top_left_count = -self.left.peek().unwrap().count;
+                    let top_left_value = -self.left.peek().unwrap().value;
                     
-    //                 let a: bool = top_right_count > top_left_count;
-    //                 let b: bool = (top_right_count == top_left_count) && top_right_value > top_left_value;
+                    let a: bool = top_right_count > top_left_count;
+                    let b: bool = (top_right_count == top_left_count) && top_right_value > top_left_value;
                     
-    //                 if a || b {
-    //                     self.left.pop();
-    //                     self.right.pop();
+                    if a || b {
+                        self.left.pop();
+                        self.right.pop();
                         
-    //                     self.left.push(Element{count: -top_right_count, value: -top_right_value});
-    //                     self.right.push(Element{count: top_left_count, value: top_left_value});
-    //                     self.sum -= map[top_left_value as usize];
-    //                     self.set[top_left_value as usize] = -1;
-    //                     self.sum += map[top_right_value as usize];
-    //                     self.set[top_right_value as usize] = 1;
-    //                 } else {
-    //                     break
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                        self.left.push(Element{count: -top_right_count, value: -top_right_value});
+                        self.right.push(Element{count: top_left_count, value: top_left_value});
+                        self.sum -= map[top_left_value as usize]*top_left_count;
+                        self.set[top_left_value as usize] = -1;
+                        self.sum += map[top_right_value as usize]*top_right_count;
+                        self.set[top_right_value as usize] = 1;
+                    } else {
+                        break
+                    }
+                }
+            }
+        }
+    }
 } 
 
 fn main() { 
-    let mut balance: Balance = Balance{left: BinaryHeap::new(), right: BinaryHeap::new(), set: vec![0; 3], len: 0, sum: 0};
-    let nums = vec![0, 1, 2, 1, 2];
-    let map: Vec<i64> = vec![0, 1, 2];
-    let mut count: Vec<i64> = vec![0; 3];
-    let x: i32 = 1;
+    let mut nums: Vec<i32> = vec![3,3,1,5,3];
+    let x: i32 = 2;
+    let k: usize = 4;
+    let size = nums.len();
+    let mut temp: Vec<i32> = nums.clone();
+    temp.sort_unstable();
+    let mut i: usize = 0;
+    let mut j: usize = 0;
+    let mut num: i64 = 0;
+    let mut map: Vec<i64> = vec![0; size];
+    let mut hash: HashMap<i32, i32> = HashMap::new();
     
-    
-    for i in 0..nums.len() {
-        count[nums[i] as usize] += 1;
-        balance.add(&(nums[i] as i64), &count[nums[i] as usize], &map, &x);
+    while i < size {
+        map[num as usize] = temp[i] as i64;
+        hash.insert(temp[i], num as i32);
+        while j < size && temp[i] == temp[j] {
+            j += 1;
+        }
+        num += 1;
+        i = j;
     }
-    println!("{:?}", balance)
+    
+    for i in 0..size {
+        nums[i] = *hash.get(&nums[i]).unwrap();
+    }
+    
+    let mut balance: Balance = Balance{left: BinaryHeap::new(), right: BinaryHeap::new(), set: vec![0; 3], len: 0, sum: 0};
+    let mut counts: Vec<i64> = vec![0; size];
+    let mut res: Vec<i64> = Vec::new();
+    for i in 0..size {
+        counts[nums[i] as usize] += 1;
+        balance.add(&(nums[i] as i64), &counts[nums[i] as usize], &map, &x);
+        balance.rebalance(&counts, &map, &x);
+        if i == k - 1 {
+            res.push(balance.sum);
+        }
+        if i >= k {
+            counts[nums[i - k] as usize] -= 1;
+            balance.subtract(&(nums[i - k] as i64), &counts[nums[i - k] as usize], &map, &x);
+            balance.rebalance(&counts, &map, &x); 
+            res.push(balance.sum);
+        }
+    }
+    
+    println!("{:?}", res)
 }
 
 //Leetcode 3691
