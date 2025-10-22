@@ -24,168 +24,98 @@ impl PartialOrd for Element {
 
 #[derive(Debug)]
 struct Balance {
-    left: BinaryHeap<Element>,
-    right: BinaryHeap<Element>,
-    set: Vec<i32>,
+    active: BinaryHeap<Element>,
+    inactive: BinaryHeap<Element>,
+    is_active: Vec<bool>,
     len: i32,
     sum: i64,
 }
 
 impl Balance {
-    fn add(&mut self, val: &i64, count: &i64, map: &Vec<i64>, x: &i32) {
-        let set_val = self.set[*val as usize];
-        if set_val == 0 {
-            if self.len < *x {
-                self.left.push(Element{count: -1**count, value: -1*val});
-                self.len += 1;
-                self.sum += map[*val as usize];
-                self.set[*val as usize] = 1;
-            } else {
-                let top_count = -self.left.peek().unwrap().count;
-                let top_value = -self.left.peek().unwrap().value;
-                
-                if top_count == *count && top_value < *val {
-                    self.left.push(Element{count: -1**count, value: -1*val});
-                    self.set[*val as usize] = 1;
-                    self.sum += map[*val as usize];
-                        
-                    self.left.pop();
-                    self.right.push(Element{count: top_count, value: top_value});
-                    self.set[top_value as usize] = -1;
-                    self.sum -= map[top_value as usize];
-                } else {
-                    self.right.push(Element{count: *count, value: *val});
-                    self.set[*val as usize] = -1;
-                }   
-            }
-        } else if set_val == 1 {
-            let top_value = -self.left.peek().unwrap().value;
-            
-            if top_value == *val {
-                self.left.pop();
-                self.left.push(Element{count: -1**count, value: -1*val});
-            }
-            
-            self.sum += map[*val as usize];
+    fn add(&mut self, value: &i64, count: &i64, map: &Vec<i64>, x: &i32) {
+        if !self.is_active[*value as usize] {
+            self.is_active[*value as usize] = true;
+            self.len += 1;
+            self.sum += count*map[*value as usize];
         } else {
-            let top_count = self.right.peek().unwrap().count;
-            let top_value = self.right.peek().unwrap().value;
+            self.sum += map[*value as usize];
+        }
+        self.active.push(Element{count: -1**count, value: -1*value});
+        
+        if self.len > *x {
+            let top_count = -self.active.peek().unwrap().count;
+            let top_value = -self.active.peek().unwrap().value;
             
-            if top_value == *val {
-                self.right.pop();
-                self.right.push(Element{count: top_count, value: top_value});
-            } else {
-                let a : bool = *count > top_count;
-                let b: bool = (*count == top_count) && (*val > top_value);
-                
-                if a || b {
-                    self.right.push(Element{count: top_count, value: top_value});
-                }
-            }
+            self.active.pop();
+            self.inactive.push(Element{count: top_count, value: top_value});
+            self.is_active[top_value as usize] = false;
+            self.len -= 1;
+            self.sum -= top_count*map[top_value as usize];
         }
     }
     
-    fn subtract(&mut self, val: &i64, count: &i64, map: &Vec<i64>, x: &i32) {
-        let set_val = self.set[*val as usize];
-        if set_val == 1 {
-            let top_count = -self.left.peek().unwrap().count;
-            let top_value = -self.left.peek().unwrap().value;
+    fn subtract(&mut self, value: &i64, count: &i64, map: &Vec<i64>, x: &i32) {
+        if !self.is_active[*value as usize] {
+            self.inactive.push(Element{count: *count, value: *value});
+        } else {
+            self.active.push(Element{count: -1**count, value: -1*value});
+            self.sum -= map[*value as usize];
+            
+            if !self.inactive.is_empty() {
+                let top_count = self.inactive.peek().unwrap().count;
+                let top_value = self.inactive.peek().unwrap().value;
              
-            if top_value == *val {
-                self.left.pop();
-                self.left.push(Element{count: -1**count, value: -1*val});
-            } else {
-                let a: bool = *count < top_count;
-                let b: bool = (*count == top_count) && (*val < top_value);
+                self.active.push(Element{count: -top_count, value: -top_value});
+                self.inactive.pop();
+                self.is_active[top_value as usize] = true;
+                self.len += 1;
+                self.sum += top_count*map[top_value as usize];
                 
-                if a || b {
-                    self.left.push(Element{count: -1**count, value: -1*val});
+                if self.len > *x {
+                    let top_count = -self.active.peek().unwrap().count;
+                    let top_value = -self.active.peek().unwrap().value;
+                    self.active.pop();
+                    self.inactive.push(Element{count: top_count, value: top_value});
+                    self.is_active[top_value as usize] = false;
+                    self.len -= 1;
+                    self.sum -= top_count*map[top_value as usize];
                 }
-             }
-             self.sum -= map[*val as usize];
-        } else {
-            let top_value = self.right.peek().unwrap().value; 
-            
-            if top_value == *val {
-                self.right.pop();
-                self.right.push(Element{count: *count, value: top_value});
             }
         }
     }
     
-    fn rebalance(&mut self, count: &Vec<i64>, map: &Vec<i64>, x: &i32) {
-        loop {
-            if self.len == 0 {
-                break
-            }
+    fn clean(&mut self, counts: &Vec<i64>) {
+        while !self.active.is_empty() {
+            let top_count = -self.active.peek().unwrap().count;
+            let top_value = -self.active.peek().unwrap().value;
             
-            loop {
-                let top_left_count = -self.left.peek().unwrap().count;
-                let top_left_value = -self.left.peek().unwrap().value;
-                
-                if top_left_count != count[top_left_value as usize] {
-                    self.left.pop();
-                    self.left.push(Element{count: -count[top_left_value as usize], value: -top_left_value});
-                } else {
-                    break
-                }
-            }
-            
-            if self.right.is_empty() {
-                break
-            }
-            
-            loop {
-                let top_right_count = self.right.peek().unwrap().count;
-                let top_right_value = self.right.peek().unwrap().value;
-                
-                if top_right_count != count[top_right_value as usize] {
-                    self.right.pop();
-                    self.right.push(Element{count: count[top_right_value as usize], value: top_right_value});
-                } else {
-                    break
-                }
-            }
-            
-            let top_right_count = self.right.peek().unwrap().count;
-            
-            if top_right_count == 0 {
-                self.set[self.right.peek().unwrap().value as usize] = 0;
-                break
+            if !self.is_active[top_value as usize] || top_count != counts[top_value as usize] {
+                self.active.pop();
             } else {
-                let top_right_value = self.right.peek().unwrap().value;
-                if self.len < *x {
-                    self.left.push(Element{count: -top_right_count, value: -top_right_value});
-                } else {
-                    let top_left_count = -self.left.peek().unwrap().count;
-                    let top_left_value = -self.left.peek().unwrap().value;
-                    
-                    let a: bool = top_right_count > top_left_count;
-                    let b: bool = (top_right_count == top_left_count) && top_right_value > top_left_value;
-                    
-                    if a || b {
-                        self.left.pop();
-                        self.right.pop();
-                        
-                        self.left.push(Element{count: -top_right_count, value: -top_right_value});
-                        self.right.push(Element{count: top_left_count, value: top_left_value});
-                        self.sum -= map[top_left_value as usize]*top_left_count;
-                        self.set[top_left_value as usize] = -1;
-                        self.sum += map[top_right_value as usize]*top_right_count;
-                        self.set[top_right_value as usize] = 1;
-                    } else {
-                        break
-                    }
-                }
+                break
+            }
+        }
+        
+        while !self.inactive.is_empty() {
+            let top_count = self.inactive.peek().unwrap().count;
+            let top_value = self.inactive.peek().unwrap().value;
+            
+            if self.is_active[top_value as usize] || top_count != counts[top_value as usize] {
+                self.inactive.pop();
+            } else {
+                break
             }
         }
     }
-} 
+}
 
+        
+
+//, 3, 4, 4, 8, 8, 8, 8
 fn main() { 
-    let mut nums: Vec<i32> = vec![3,3,1,5,3];
-    let x: i32 = 2;
-    let k: usize = 4;
+    let mut nums: Vec<i32> = vec![4,6,5,3,7,7,7,6,8,2,2, 3, 4, 4, 8, 8, 8, 8];
+    let k: usize = 5;
+    let x: i32 = 3;
     let size = nums.len();
     let mut temp: Vec<i32> = nums.clone();
     temp.sort_unstable();
@@ -209,22 +139,26 @@ fn main() {
         nums[i] = *hash.get(&nums[i]).unwrap();
     }
     
-    let mut balance: Balance = Balance{left: BinaryHeap::new(), right: BinaryHeap::new(), set: vec![0; size], len: 0, sum: 0};
+    let mut balance: Balance = Balance{active: BinaryHeap::new(), inactive: BinaryHeap::new(), is_active: vec![false; size], len: 0, sum: 0};
     let mut counts: Vec<i64> = vec![0; size];
     let mut res: Vec<i64> = Vec::new();
     for i in 0..size {
         counts[nums[i] as usize] += 1;
         balance.add(&(nums[i] as i64), &counts[nums[i] as usize], &map, &x);
-        balance.rebalance(&counts, &map, &x);
+        balance.clean(&counts);
+        if i == size - 1 {
+            //println!("{:?}", balance);
+        }
         if i == k - 1 {
             res.push(balance.sum);
         }
-        if i >= k {
+        if i >= k  {
             counts[nums[i - k] as usize] -= 1;
             balance.subtract(&(nums[i - k] as i64), &counts[nums[i - k] as usize], &map, &x);
-            balance.rebalance(&counts, &map, &x); 
+            balance.clean(&counts); 
             res.push(balance.sum);
         }
+        
     }
     
     println!("{:?}", res)
